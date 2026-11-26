@@ -45,6 +45,9 @@ dotnet test
 # Without the android workload, build just what you need:
 dotnet build src/AlienSkies.Screensaver
 
+# Or everything except Android, as CI does (AlienSkies.CI.slnf is the solution minus AlienSkies.Android):
+dotnet build AlienSkies.CI.slnf
+
 # Try it in a normal, resizable window (Esc closes):
 dotnet run --project src/AlienSkies.Screensaver -- /w
 
