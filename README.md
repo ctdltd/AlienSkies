@@ -42,7 +42,10 @@ cd AlienSkies
 dotnet build          # whole solution, including Android (needs the android workload)
 dotnet test
 
-# Without the android workload, build just what you need:
+# Without the android workload, use the solution filter that leaves Android out
+# (this is what CI builds), or build a single project:
+dotnet build AlienSkies.CI.slnf
+dotnet test AlienSkies.CI.slnf
 dotnet build src/AlienSkies.Screensaver
 
 # Try it in a normal, resizable window (Esc closes):
