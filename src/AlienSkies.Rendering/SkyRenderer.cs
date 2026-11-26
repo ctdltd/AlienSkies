@@ -168,7 +168,7 @@ public sealed class SkyRenderer : IDisposable
         string spin = c.TidallyLocked ? "tidally locked" : $"day {Math.Abs(c.RotationPeriodHours):0.#} h";
         var lines = new List<string>
         {
-            $"The sky from {p.PlanetName}  ·  orbiting {p.HostName}, {scene.DistanceFromEarthLy:0.#} ly from Earth",
+            $"The sky from {(p.IsImaginary && !p.PlanetName.Contains("imaginary", StringComparison.OrdinalIgnoreCase) ? "imaginary " : "")}{p.PlanetName}  ·  orbiting {p.HostName}, {scene.DistanceFromEarthLy:0.#} ly from Earth",
             $"Lat {c.LatitudeDeg:0.#}°  Lon {c.LongitudeDeg:0.#}°  ·  orbit {c.SemiMajorAxisAu:0.###} AU / {c.OrbitalPeriodDays:0.##} d  ·  {spin}  ·  " +
             $"{p.HostName} at {suns[0].Altitude / Units.Deg:0}° altitude, mag {suns[0].Magnitude:0.0}",
         };
@@ -225,11 +225,13 @@ public sealed class SkyRenderer : IDisposable
     }
 
     /// <summary>
-    /// The archive has no host colour, so estimate B−V from absolute magnitude along the main sequence
+    /// Uses the host's catalog B−V when known (imaginary planets around catalog stars). The exoplanet archive has
+    /// no host colour, so otherwise estimate B−V from absolute magnitude along the main sequence
     /// (Sun: M 4.8 → 0.65; red dwarfs like TRAPPIST-1: M ≈ 18 → very red). Giants will come out too blue.
     /// </summary>
     private static SKColor HostStarColor(Core.Catalog.ExoplanetSystem planet) =>
-        BvToColor(Math.Clamp(0.65 + 0.11 * (planet.HostAbsoluteV - Units.SunAbsoluteV), -0.3, 2.0));
+        BvToColor(planet.HostColorBV
+            ?? Math.Clamp(0.65 + 0.11 * (planet.HostAbsoluteV - Units.SunAbsoluteV), -0.3, 2.0));
 
     private static double SmoothStep(double e0, double e1, double x)
     {

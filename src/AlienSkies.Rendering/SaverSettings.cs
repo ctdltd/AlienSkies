@@ -20,11 +20,27 @@ public sealed class SaverSettings
 {
     // ---- Planet ------------------------------------------------------------
     [Category("1. Planet"), DisplayName("Planet"), TypeConverter(typeof(PlanetNameConverter))]
-    [Description("Catalog planet to stand on, chosen from the exoplanet catalog.")]
+    [Description("Catalog planet to stand on, chosen from the exoplanet catalog. Ignored while an imaginary planet's host star is set.")]
     public string PlanetName { get; set; } = "alf Cen A (hypothetical Earth)";
 
+    /// <summary>Value of <see cref="ImaginaryHostStar"/> meaning "no imaginary planet, use <see cref="PlanetName"/>".</summary>
+    public const string NoImaginaryHost = "(none)";
+
+    [Category("1. Planet"), DisplayName("Imaginary planet: host star"), TypeConverter(typeof(StarNameConverter))]
+    [Description("Pick any catalog star to put your own made-up planet around it (overrides Planet). It starts where it gets Earth's sunlight, on a circular orbit; turn off 'Use catalog orbit' to set your own orbit below. (none) = use the catalog planet.")]
+    public string ImaginaryHostStar { get; set; } = NoImaginaryHost;
+
+    [Category("1. Planet"), DisplayName("Imaginary planet: name")]
+    [Description("Optional name for your imaginary planet, shown in the info overlay.")]
+    public string ImaginaryPlanetName { get; set; } = "";
+
+    /// <summary>True when an imaginary planet's host star is chosen.</summary>
+    [Browsable(false), JsonIgnore]
+    public bool HasImaginaryPlanet =>
+        !string.IsNullOrWhiteSpace(ImaginaryHostStar) && ImaginaryHostStar.Trim() != NoImaginaryHost;
+
     [Category("1. Planet"), DisplayName("Use catalog orbit")]
-    [Description("True: orbit values come from the exoplanet catalog (unknowns get defaults). False: use the overrides below.")]
+    [Description("True: orbit values come from the exoplanet catalog (unknowns get defaults); for an imaginary planet, an Earth-like circular orbit. False: use the overrides below.")]
     public bool UseCatalogOrbit { get; set; } = true;
 
     [Category("1. Planet"), DisplayName("Orbital radius (AU)")]
@@ -163,6 +179,23 @@ public sealed class SaverSettings
 
     public SaverSettings Clone() =>
         JsonSerializer.Deserialize<SaverSettings>(JsonSerializer.Serialize(this, Json), Json)!;
+}
+
+/// <summary>
+/// Offers named catalog stars as a drop-down, after "(none)". Not exclusive, so on Windows you can also type
+/// "HIP 12345" for an unnamed star.
+/// </summary>
+public sealed class StarNameConverter : StringConverter
+{
+    private static readonly Lazy<string[]> Names = new(() =>
+        new[] { SaverSettings.NoImaginaryHost }
+            .Concat(CatalogLoader.LoadStars().Select(s => s.Name).OfType<string>()
+                .Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase))
+            .ToArray());
+
+    public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) => true;
+    public override bool GetStandardValuesExclusive(ITypeDescriptorContext? context) => false;
+    public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context) => new(Names.Value);
 }
 
 /// <summary>Offers catalog planet names as a drop-down (PropertyGrid on Windows, Spinner on Android); only listed names are accepted.</summary>

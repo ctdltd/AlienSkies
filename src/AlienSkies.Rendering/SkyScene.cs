@@ -30,10 +30,17 @@ public sealed class SkyScene
     public SkyScene(SaverSettings settings)
     {
         _settings = settings;
-        var planet = Planets.Value.FirstOrDefault(p => p.PlanetName.Equals(settings.PlanetName, StringComparison.OrdinalIgnoreCase))
+        var planet = ImaginaryPlanet(settings)
+                     ?? Planets.Value.FirstOrDefault(p => p.PlanetName.Equals(settings.PlanetName, StringComparison.OrdinalIgnoreCase))
                      ?? Planets.Value[0];
         Load(planet, settings.LatitudeDeg, settings.LongitudeDeg);
     }
+
+    /// <summary>The user's made-up planet, or null when none is set or its host star isn't in the catalog.</summary>
+    private static ExoplanetSystem? ImaginaryPlanet(SaverSettings settings) =>
+        settings.HasImaginaryPlanet && Star.Find(Catalog.Value, settings.ImaginaryHostStar) is { } host
+            ? ExoplanetSystem.Imaginary(host, settings.ImaginaryPlanetName)
+            : null;
 
     /// <summary>Simulated time in days since the orbit epoch.</summary>
     public double TimeDays => _epochDays + _clock.Elapsed.TotalSeconds * _settings.TimeScale / 86_400.0;

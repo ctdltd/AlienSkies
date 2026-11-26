@@ -61,7 +61,7 @@ Render a single frame to a PNG, on any OS (handy for checking drawing changes wi
 dotnet run --project tools/AlienSkies.Preview -- --planet "TRAPPIST-1 e" --lat 30 --az 180 --out sky.png
 ```
 
-Other options are `--lon`, `--days`, `--alt`, `--fov`, `--width`, `--height` and `--density`.
+Use `--star "Tau Ceti"` (and optionally `--name "My world"`) instead of `--planet` to stand on an imaginary planet around any catalog star. Other options are `--lon`, `--days`, `--alt`, `--fov`, `--width`, `--height` and `--density`.
 
 Build the screen saver file:
 
@@ -153,7 +153,8 @@ Settings live in `%APPDATA%\AlienSkies\settings.json` on Windows (in the app's p
 | Group | Setting | Notes |
 |---|---|---|
 | **Planet** | Planet | Drop-down of every planet in the exoplanet catalog |
-| | Use catalog orbit | Off = use the overrides below |
+| | Imaginary planet: host star, name | Put your own made-up planet around any catalog star (overrides Planet); see below |
+| | Use catalog orbit | Off = use the overrides below. For an imaginary planet, on = an Earth-like orbit |
 | | Orbital radius (AU), orbital period (days) | Period 0 = derive it from the radius and the star's mass (Kepler's third law) |
 | | Eccentricity, inclination, ascending node | Catalog conventions; see below |
 | **Spin** | Rotation | Auto (locks orbits closer than 0.1 AU), Tidally locked, or Free |
@@ -167,6 +168,10 @@ Settings live in `%APPDATA%\AlienSkies\settings.json` on Windows (in the app's p
 | | Earth's constellations, star labels, mark our Sun, info overlay | |
 | **Time** | Time scale, start time | 600× = one Earth day every 2.4 minutes |
 | **Tour** | Tour mode, interval | Random planet and random spot on its surface |
+
+### Imaginary planets
+
+Pick any named star as **Imaginary planet: host star** (on Windows you can also type `HIP 12345` for an unnamed one) and the sky is drawn from a planet that doesn't exist. The star's luminosity, mass and radius are estimated from its brightness and colour, and the planet starts on a circular orbit at the distance where it gets the same starlight Earth gets from the Sun, with the period from Kepler's third law. Around a red dwarf like Proxima that's about 0.04 AU and 8 days, close enough to be tidally locked; around Tau Ceti it's 0.69 AU and 228 days. Turn off **Use catalog orbit** to set your own orbit, and use the Spin and Observer settings as for any planet. Set the host star back to **(none)** to return to the catalog planet. The estimates assume a main-sequence star, so a giant's mass comes out too high.
 
 ### Two conventions worth knowing
 

@@ -2,7 +2,7 @@ using System.Globalization;
 using AlienSkies.Rendering;
 using SkiaSharp;
 
-// Usage: dotnet run --project tools/AlienSkies.Preview -- [--planet "TRAPPIST-1 e"] [--lat 30] [--lon 0]
+// Usage: dotnet run --project tools/AlienSkies.Preview -- [--planet "TRAPPIST-1 e" | --star "Vega" [--name "Zorg"]] [--lat 30] [--lon 0]
 //        [--days 0] [--az 180] [--alt 25] [--fov 100] [--width 1600] [--height 900] [--density 1] [--out sky.png]
 var opts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 for (int i = 0; i + 1 < args.Length; i += 2) opts[args[i].TrimStart('-')] = args[i + 1];
@@ -21,6 +21,8 @@ var settings = new SaverSettings
     FieldOfViewDeg = D("fov", 100),
 };
 if (opts.TryGetValue("planet", out var planet)) settings.PlanetName = planet;
+if (opts.TryGetValue("star", out var star)) settings.ImaginaryHostStar = star;       // imaginary planet around any catalog star
+if (opts.TryGetValue("name", out var name)) settings.ImaginaryPlanetName = name;
 
 var size = new SKSizeI((int)D("width", 1600), (int)D("height", 900));
 var scene = new SkyScene(settings);
