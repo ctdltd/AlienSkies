@@ -104,7 +104,7 @@ Settings live in `%APPDATA%\AlienSkies\settings.json` on Windows (in the app's p
 
 | Group | Setting | Notes |
 |---|---|---|
-| **Planet** | Planet | Any planet name from the exoplanet catalog |
+| **Planet** | Planet | Drop-down of every planet in the exoplanet catalog |
 | | Use catalog orbit | Off = use the overrides below |
 | | Orbital radius (AU), orbital period (days) | Period 0 = derive it from the radius and the star's mass (Kepler's third law) |
 | | Eccentricity, inclination, ascending node | Catalog conventions; see below |
