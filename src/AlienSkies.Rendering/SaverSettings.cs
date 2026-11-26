@@ -20,7 +20,7 @@ public sealed class SaverSettings
 {
     // ---- Planet ------------------------------------------------------------
     [Category("1. Planet"), DisplayName("Planet"), TypeConverter(typeof(PlanetNameConverter))]
-    [Description("Catalog planet to stand on. Type any name from exoplanets.csv, or pick from the list.")]
+    [Description("Catalog planet to stand on, chosen from the exoplanet catalog.")]
     public string PlanetName { get; set; } = "alf Cen A (hypothetical Earth)";
 
     [Category("1. Planet"), DisplayName("Use catalog orbit")]
@@ -165,13 +165,13 @@ public sealed class SaverSettings
         JsonSerializer.Deserialize<SaverSettings>(JsonSerializer.Serialize(this, Json), Json)!;
 }
 
-/// <summary>Offers catalog planet names as a drop-down in the PropertyGrid (free text still allowed).</summary>
+/// <summary>Offers catalog planet names as a drop-down (PropertyGrid on Windows, Spinner on Android); only listed names are accepted.</summary>
 public sealed class PlanetNameConverter : StringConverter
 {
     private static readonly Lazy<string[]> Names = new(() =>
         CatalogLoader.LoadExoplanets().Select(p => p.PlanetName).Order(StringComparer.OrdinalIgnoreCase).ToArray());
 
     public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) => true;
-    public override bool GetStandardValuesExclusive(ITypeDescriptorContext? context) => false;
+    public override bool GetStandardValuesExclusive(ITypeDescriptorContext? context) => true;
     public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context) => new(Names.Value);
 }

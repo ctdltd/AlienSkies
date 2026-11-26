@@ -14,7 +14,8 @@ namespace AlienSkies.Droid;
 /// <summary>
 /// The app's launcher screen and the settings page for both the screen saver and the live wallpaper. Builds its form from the same
 /// <see cref="SaverSettings"/> attributes the Windows PropertyGrid uses ([Category], [DisplayName],
-/// [Description]), so both platforms stay in step automatically. Changes are saved when you leave.
+/// [Description]), so both platforms stay in step automatically. Properties with a list of
+/// standard values (the planet) appear as drop-downs. Changes are saved when you leave.
 /// </summary>
 [Activity(
     Name = "com.certificationtoolanddie.alienskies.SettingsActivity",
@@ -157,16 +158,29 @@ public sealed class SettingsActivity : Activity
                 _readers.Add(() => property.SetValue(_settings,
                     Enum.Parse(property.PropertyType, names[Math.Max(0, spinner.SelectedItemPosition)])));
             }
+            else if (property.PropertyType == typeof(string) &&
+                     TypeDescriptor.GetProperties(_settings)[property.Name]?.Converter is { } converter &&
+                     converter.GetStandardValuesSupported())
+            {
+                // Pick-list (e.g. Planet): choices come from the property's TypeConverter.
+                var values = converter.GetStandardValues()!.Cast<object>().Select(v => v.ToString()!).ToArray();
+                var spinner = new Spinner(this)
+                {
+                    Adapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleSpinnerDropDownItem, values),
+                };
+                // A saved name no longer in the catalog shows (and saves) the first entry rather than a stale value.
+                int current = Array.FindIndex(values, v =>
+                    string.Equals(v, (string?)property.GetValue(_settings), StringComparison.OrdinalIgnoreCase));
+                spinner.SetSelection(Math.Max(0, current));
+                block.AddView(spinner);
+                _readers.Add(() =>
+                {
+                    if (values.Length > 0) property.SetValue(_settings, values[Math.Max(0, spinner.SelectedItemPosition)]);
+                });
+            }
             else if (property.PropertyType == typeof(string))
             {
-                // Free text with suggestions: the planet list comes from the property's TypeConverter.
-                var text = new AutoCompleteTextView(this) { Text = (string?)property.GetValue(_settings), Threshold = 1 };
-                var converter = TypeDescriptor.GetProperties(_settings)[property.Name]?.Converter;
-                if (converter?.GetStandardValuesSupported() == true)
-                {
-                    var values = converter.GetStandardValues()!.Cast<object>().Select(v => v.ToString()!).ToArray();
-                    text.Adapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleDropDownItem1Line, values);
-                }
+                var text = new EditText(this) { Text = (string?)property.GetValue(_settings) };
                 block.AddView(text);
                 _readers.Add(() => property.SetValue(_settings, text.Text));
             }
