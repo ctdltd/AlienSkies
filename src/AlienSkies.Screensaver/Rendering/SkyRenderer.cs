@@ -40,7 +40,7 @@ public sealed class SkyRenderer
         DrawStars(g, scene, horizon, cam, s, limit);
         DrawHostStar(g, scene, hostLocal, hostDistAu, cam);
         if (s.ShowGround) DrawGround(g, cam, size, day);
-        if (s.ShowInfo) DrawInfo(g, size, scene, hostAlt, hostDistAu);
+        if (s.ShowInfo) DrawInfo(g, size, scene, horizon, hostAlt, hostDistAu, s.MarkSol);
     }
 
     private void DrawStars(Graphics g, SkyScene scene, HorizonBasis horizon, Camera cam, SaverSettings s, double limit)
@@ -67,7 +67,9 @@ public sealed class SkyRenderer
             {
                 using var pen = new Pen(Color.FromArgb(200, 255, 210, 90), 1.2f);
                 g.DrawEllipse(pen, p.X - 9, p.Y - 9, 18, 18);
-                g.DrawString($"Sun (Sol)  m {star.ApparentMagnitude:F1}", _labelFont, Brushes.Gold, p.X + 11, p.Y - 7);
+                double ly = star.DistanceParsecs * Units.LightYearsPerParsec;
+                g.DrawString($"Sun (Sol){'\n'}{ly:#,0.#} ly · mag {star.ApparentMagnitude:0.0}",
+                             _labelFont, Brushes.Gold, p.X + 11, p.Y - 9);
             }
             else if (star.Name is not null && star.ApparentMagnitude < s.LabelMagnitudeLimit)
             {
@@ -124,7 +126,7 @@ public sealed class SkyRenderer
         g.FillPolygon(brush, poly);
     }
 
-    private void DrawInfo(Graphics g, Size size, SkyScene scene, double hostAlt, double hostDistAu)
+    private void DrawInfo(Graphics g, Size size, SkyScene scene, HorizonBasis horizon, double hostAlt, double hostDistAu, bool markSol)
     {
         var c = scene.Config;
         var p = scene.Sky.Planet;
@@ -133,8 +135,16 @@ public sealed class SkyRenderer
             $"The sky from {p.PlanetName}  ·  orbiting {p.HostName}, {scene.DistanceFromEarthLy:0.#} ly from Earth\n" +
             $"Lat {c.LatitudeDeg:0.#}°  Lon {c.LongitudeDeg:0.#}°  ·  orbit {c.SemiMajorAxisAu:0.###} AU / {c.OrbitalPeriodDays:0.##} d  ·  {spin}  ·  " +
             $"{p.HostName} at {hostAlt / Units.Deg:0}° altitude, mag {AlienSky.HostApparentMagnitude(p, hostDistAu):0.0}";
+
+        // Where to look for home, even when it is off-screen or below the horizon.
+        if (markSol && scene.StarsById.TryGetValue(AlienSky.SolId, out var sol))
+        {
+            var (alt, az) = horizon.ToHorizontal(sol.Direction);
+            string where = alt < 0 ? "below the horizon" : $"azimuth {az / Units.Deg:0}°, altitude {alt / Units.Deg:0}°";
+            text += $"\nSun (Sol): {where}  ·  this light left it {sol.DistanceParsecs * Units.LightYearsPerParsec:#,0.#} years ago";
+        }
         using var brush = new SolidBrush(Color.FromArgb(160, 210, 215, 225));
-        g.DrawString(text, _infoFont, brush, 16, size.Height - 52);
+        g.DrawString(text, _infoFont, brush, 16, size.Height - 72);
     }
 
     // ---- helpers -----------------------------------------------------------
