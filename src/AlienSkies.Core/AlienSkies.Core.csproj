@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>AlienSkies.Core</RootNamespace>
+  </PropertyGroup>
+
+  <!-- Small sample catalogs are embedded so the saver works with zero setup.
+       Full catalogs built by tools/build_catalog.py override these at runtime
+       (see CatalogLocator). -->
+  <ItemGroup>
+    <EmbeddedResource Include="Data\*.csv" LogicalName="AlienSkies.Data.%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

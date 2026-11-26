@@ -1,0 +1,16 @@
+constellation,from_id,to_id
+# Earth's constellation figures, by stars.csv id. Seen from elsewhere they distort - that's the fun.
+Orion,27989,25336
+Orion,27989,26727
+Orion,25336,25930
+Orion,25930,26311
+Orion,26311,26727
+Orion,26727,27366
+Orion,25930,24436
+Ursa Major (Big Dipper),54061,53910
+Ursa Major (Big Dipper),53910,58001
+Ursa Major (Big Dipper),58001,59774
+Ursa Major (Big Dipper),59774,54061
+Ursa Major (Big Dipper),59774,62956
+Ursa Major (Big Dipper),62956,65378
+Ursa Major (Big Dipper),65378,67301

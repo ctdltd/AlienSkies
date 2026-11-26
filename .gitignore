@@ -1,0 +1,17 @@
+# Build output
+bin/
+obj/
+artifacts/
+TestResults/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Catalog builder
+.venv/
+data-out/
+__pycache__/

@@ -1,0 +1,6 @@
+pl_name,hostname,ra,dec,sy_dist,sy_vmag,st_rad,st_mass,pl_orbsmax,pl_orbper,pl_orbincl,pl_orbeccen
+# DEVELOPMENT SAMPLE ONLY - approximate values. Build the real list with tools/build_catalog.py.
+TRAPPIST-1 e,TRAPPIST-1,346.6223,-5.0414,12.43,18.80,0.119,0.0898,0.02925,6.101013,89.793,0.005
+Proxima Cen b,Proxima Centauri,217.4289,-62.6795,1.301,11.13,0.141,0.122,0.04857,11.1868,,0.02
+eps Eri b,eps Eridani,53.2327,-9.4583,3.203,3.73,0.74,0.82,3.48,2690,78.81,0.07
+alf Cen A (hypothetical Earth),alf Cen A,219.902,-60.834,1.3386,-0.01,1.22,1.10,1.25,,,0

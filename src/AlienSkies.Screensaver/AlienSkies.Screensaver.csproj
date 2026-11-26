@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- Lets the project build (not run) on Linux/macOS CI too. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AssemblyName>AlienSkies</AssemblyName>
+    <RootNamespace>AlienSkies.Screensaver</RootNamespace>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AlienSkies.Core\AlienSkies.Core.csproj" />
+  </ItemGroup>
+
+</Project>
