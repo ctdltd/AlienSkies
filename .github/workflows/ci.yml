@@ -1,0 +1,87 @@
+name: CI
+
+# Builds everything except the Android app (which needs the .NET android
+# workload), runs the unit tests, and renders a few preview frames.
+# AlienSkies.CI.slnf is the solution minus AlienSkies.Android.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore AlienSkies.CI.slnf
+
+      - name: Build
+        run: dotnet build AlienSkies.CI.slnf --configuration Release --no-restore
+
+      - name: Test
+        run: >
+          dotnet test tests/AlienSkies.Core.Tests/AlienSkies.Core.Tests.csproj
+          --configuration Release --no-build
+          --logger "trx;LogFileName=results.trx" --results-directory TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/
+          if-no-files-found: ignore
+
+      - name: Render preview frames
+        run: |
+          mkdir -p previews
+          render() {
+            dotnet run --project tools/AlienSkies.Preview --configuration Release --no-build -- "$@"
+          }
+          render --planet "TRAPPIST-1 e" --width 1280 --height 720 --out previews/trappist-1e.png
+          render --planet "Proxima Cen b" --lat -30 --az 0 --width 1280 --height 720 --out previews/proxima-cen-b.png
+          render --planet "eps Eri b" --alt 60 --fov 120 --width 1280 --height 720 --out previews/eps-eri-b.png
+          render --planet "alf Cen A (hypothetical Earth)" --days 100 --width 1280 --height 720 --out previews/alf-cen-a.png
+          for f in previews/*.png; do
+            test -s "$f" || { echo "::error::$f is empty"; exit 1; }
+          done
+
+      - name: Upload preview frames
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-frames
+          path: previews/*.png
+          if-no-files-found: error
+
+  catalog-tools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check catalog builder compiles
+        run: python -m py_compile tools/build_catalog.py
+      - name: Check shell wrapper syntax
+        run: bash -n tools/build_catalog.sh
