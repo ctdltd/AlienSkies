@@ -81,7 +81,7 @@ Reproduce with `dotnet run --project tools/AlienSkies.Preview -- --planet "alf C
 * Proper-motion epoch slider: the sky from here, 100,000 years from now
 
 **Teaching overlays**
-* Earth's constellations, distorted (done for Orion and the Big Dipper; add all 88 from Stellarium's `constellationship.fab`)
+* Earth's constellations, distorted (done: all 88 from Stellarium's modern sky culture; 7 figure stars with no usable Hipparcos parallax, such as β Phe, are skipped)
 * "Where is Earth?" marker with distance and light-travel time ("the light you see left the Sun in 1999")
 * Local constellations, procedurally drawn by linking each system's own brightest stars
 * Highlight the planet's ecliptic, celestial equator, and pole star
