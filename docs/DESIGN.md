@@ -1,5 +1,31 @@
 # Design notes
 
+## Architecture
+
+```
+AlienSkies.Core        net10.0          astronomy only: catalogs, coordinates, orbit and spin, sky re-projection
+   ▲
+AlienSkies.Rendering   net10.0          SkyScene (time, tour hops), SaverSettings, SkyRenderer (SkiaSharp)
+   ▲
+   ├── AlienSkies.Screensaver   net10.0-windows   WinForms .scr host
+   ├── AlienSkies.Android       net10.0-android   screen saver, live wallpaper, settings app
+   └── tools/AlienSkies.Preview net10.0           renders one frame to PNG, any OS
+```
+
+Every host does the same three things: build a `SaverSettings`, wrap it in a `SkyScene`, and each frame hand an `SKCanvas` to `SkyRenderer.Draw`. The renderer knows nothing about the platform beyond a canvas size and a display density (for scaling star sizes, lines and text), so a drawing change shows up identically on every host and can be checked with the Preview tool.
+
+**Windows.** `SkiaSharp.Views.WindowsForms` only ships for .NET Framework, so `SkiaPanel` is a minimal replacement: Skia draws straight into the pixels of a premultiplied-ARGB `System.Drawing.Bitmap`, which WinForms blits to the window. A 33 ms timer drives about 30 frames per second. The `.scr` is a single-file `dotnet publish` of this project, renamed (`publish.ps1`).
+
+**Android.** Three entry points share one `AppSetup.EnsureInitialized`, which plugs the APK's `Assets/data` folder into `CatalogLoader.PlatformSource`:
+
+* `AlienSkiesDream` is a `DreamService` (the system screen saver). It shows a `SkyView`, an `SKCanvasView` that redraws on the display's vsync through `Choreographer`, throttled to about 30 fps.
+* `AlienSkiesWallpaper` is the live wallpaper. It draws on the wallpaper `SurfaceHolder` at about 15 fps, only while visible, and spreads 90° of azimuth across the launcher's home-screen pages. Its `WallpaperService.Engine` is a Java shim; see the Android note under known simplifications.
+* `SettingsActivity` is the launcher icon, with `PreviewActivity` for a full-screen preview.
+
+**Settings.** `SaverSettings` is a plain class whose properties carry `Category`, `DisplayName` and `Description` attributes. Windows shows it in a `PropertyGrid`; Android builds its settings screen from the same attributes by reflection, hiding the Windows-only multi-monitor panning option. Both save it as JSON, so a new setting appears on both platforms without UI code. The Android project roots `AlienSkies.Core` and `AlienSkies.Rendering` for the trimmer, because that reflection and `System.Text.Json` would otherwise lose properties in a Release build.
+
+**Catalogs.** `CatalogLoader` looks in `<ApplicationData>/AlienSkies/data`, then a `data` folder beside the executable, then the host's `PlatformSource` (Android assets), and finally the small sample embedded in `AlienSkies.Core`.
+
 ## Pipeline
 
 1. **Catalog → heliocentric Cartesian (once per catalog load).** RA, Dec, and parallax become an ICRS position in parsecs. Apparent V plus parallax gives absolute magnitude.
