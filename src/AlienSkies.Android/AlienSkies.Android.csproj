@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Android host: screen saver (DreamService), live wallpaper and a settings app,
+       all drawing with the shared SkiaSharp renderer. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>26</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>AlienSkies.Droid</RootNamespace>
+    <AssemblyName>AlienSkies.Android</AssemblyName>
+    <ApplicationId>com.certificationtoolanddie.alienskies</ApplicationId>
+    <ApplicationTitle>Alien Skies</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
+    <!-- Build an installable APK (sideload) as well as the Play Store bundle. -->
+    <AndroidPackageFormats>apk;aab</AndroidPackageFormats>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp.Views" Version="4.157.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AlienSkies.Core\AlienSkies.Core.csproj" />
+    <ProjectReference Include="..\AlienSkies.Rendering\AlienSkies.Rendering.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Settings are read/written by reflection and System.Text.Json; keep them whole when trimming. -->
+    <TrimmerRootAssembly Include="AlienSkies.Rendering" RootMode="All" />
+    <TrimmerRootAssembly Include="AlienSkies.Core" RootMode="All" />
+  </ItemGroup>
+
+</Project>
