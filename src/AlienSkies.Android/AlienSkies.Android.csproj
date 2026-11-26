@@ -26,6 +26,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Java shim for the live wallpaper's Engine (a Java inner class); bound to C# automatically. -->
+    <AndroidJavaSource Include="Java\SkyWallpaperService.java" Bind="true" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Settings are read/written by reflection and System.Text.Json; keep them whole when trimming. -->
     <TrimmerRootAssembly Include="AlienSkies.Rendering" RootMode="All" />
     <TrimmerRootAssembly Include="AlienSkies.Core" RootMode="All" />

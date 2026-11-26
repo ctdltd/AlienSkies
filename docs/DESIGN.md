@@ -23,7 +23,9 @@ Every vector stays in ICRS-aligned axes, so no rotation matrices pile up.
 * Binary companions within max(0.02 pc, 0.5% of the host distance) are removed as "self". From the α Cen A sample, Toliman (α Cen B) disappears even though it should be a second sun of roughly magnitude −19.
 * Host luminosity comes from the archive's `sy_vmag`, which is the *system* magnitude and slightly too bright for multiples.
 * The B−V colour ramp is approximate. Gaia stars use a rough BP−RP → B−V stand-in.
-* The GDI+ renderer is fine up to roughly 20k visible stars. Beyond that, move to a GPU renderer.
+* The SkiaSharp renderer draws on the CPU. It should handle tens of thousands of visible stars, but a GPU path (Skia's GL backend) is the next step if a full Gaia catalog is used.
+* Host-star colour isn't in the exoplanet archive, so it is estimated from absolute magnitude along the main sequence; giant hosts come out too blue.
+* Android: `WallpaperService.Engine` is a Java inner class, and the .NET for Android 10 wrapper generator emits an invalid constructor for C# subclasses of inner classes. The Engine therefore lives in a small Java shim (`src/AlienSkies.Android/Java/SkyWallpaperService.java`) that forwards callbacks to C#.
 
 ## Roadmap ideas
 
@@ -48,5 +50,6 @@ Every vector stays in ICRS-aligned axes, so no rotation matrices pile up.
 * Per-monitor modes: one panorama, or a different planet on each screen
 
 **Platform**
-* GPU renderer (Silk.NET/OpenGL or Direct2D)
-* macOS `.saver` sharing a WebGL renderer through WebView2 / WKWebView
+* GPU rendering (SkiaSharp's GL backend)
+* macOS `.saver` reusing the SkiaSharp renderer
+* Android: a daylight-aware dim mode for bedside docks

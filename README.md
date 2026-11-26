@@ -2,7 +2,7 @@
 
 **The night sky as it would look from a planet orbiting another star.**
 
-Alien Skies is a Windows screen saver that puts you on the surface of a real exoplanet, such as TRAPPIST-1 e, Proxima Centauri b or any of the ~6,000 others in the NASA Exoplanet Archive, and shows the stars as they would appear from there. Star positions and distances come from real catalogs (Hipparcos, optionally Gaia DR3). The sky is computed, not painted.
+Alien Skies is a screen saver for Windows and Android, plus an Android live wallpaper, that puts you on the surface of a real exoplanet, such as TRAPPIST-1 e, Proxima Centauri b or any of the ~6,000 others in the NASA Exoplanet Archive, and shows the stars as they would appear from there. Star positions and distances come from real catalogs (Hipparcos, optionally Gaia DR3). The sky is computed, not painted.
 
 Move away from Earth and familiar constellations stretch and break apart. Our own Sun turns into an ordinary star in someone else's sky, labelled so you can find it. On a tidally locked world, the host star stays fixed overhead while the stars wheel past once per orbit.
 
@@ -20,16 +20,17 @@ Move away from Earth and familiar constellations stretch and break apart. Our ow
 - **Ground and horizon.** You're standing somewhere: pick your latitude, longitude and the direction you're facing.
 - **Multi-monitor panorama.** Each extra screen continues the view to the right instead of repeating it.
 - **Tour mode.** Hop to a random planet and a random spot on its surface at a fixed interval.
+- **Android too.** The same sky as an Android screen saver (while charging or docked) and as a live wallpaper, where swiping between home-screen pages pans across the horizon.
 
 ## Status
 
-Early development. The astronomy core is unit-tested, and the screen saver host builds cleanly. The renderer is a deliberately simple GDI+ implementation; a GPU renderer is on the roadmap. The repository embeds a small sample catalog so it runs out of the box. See [Star and planet data](#star-and-planet-data) to install the full catalogs.
+Early development. The astronomy core is unit-tested. All hosts draw with one shared SkiaSharp renderer, and `tools/AlienSkies.Preview` renders frames to PNG so drawing changes can be checked on any OS. The Windows saver and the Android app both build cleanly; the Android screen saver and live wallpaper have not yet been tested on a device. The repository embeds a small sample catalog so it runs out of the box. See [Star and planet data](#star-and-planet-data) to install the full catalogs.
 
 ## Requirements
 
-- Windows 10 or 11, x64
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) to build
-- To run a framework-dependent build: the .NET 10 Desktop Runtime. A self-contained build needs nothing extra.
+- **Windows saver:** Windows 10 or 11, x64. A framework-dependent build needs the .NET 10 Desktop Runtime; a self-contained build needs nothing extra.
+- **Android:** the .NET `android` workload (`dotnet workload install android`) to build; Android 8.0 (API 26) or later to run
 - Optional, for the full catalogs: Python 3 (WSL works well) with `pyvo`
 
 ## Build, run and install
@@ -57,7 +58,26 @@ Build the screen saver file:
 
 This produces `artifacts\AlienSkies.scr`. Right-click it and choose **Install**, or copy it to `C:\Windows\System32` (needs admin) so it appears in **Settings → Personalization → Lock screen → Screen saver**.
 
-### Command-line switches
+### Android
+
+```powershell
+dotnet publish src/AlienSkies.Android -c Release
+adb install src/AlienSkies.Android/bin/Release/net10.0-android/publish/com.certificationtoolanddie.alienskies-Signed.apk
+```
+
+The app opens to its settings screen, which has **Preview**, **Screen saver settings** and **Set as live wallpaper** buttons.
+
+- **Screen saver:** Settings → Display → Screen saver → Alien Skies. It runs while the device is charging or docked; a touch dismisses it.
+- **Live wallpaper:** use the button in the app, or pick Alien Skies in the system wallpaper picker. Swiping between home-screen pages pans the view; the info text is hidden so it doesn't clutter the home screen.
+- **Android TV:** works as a normal screen saver. Google TV devices hide third-party screen savers from their settings, but you can still select it with adb:
+
+  ```bash
+  adb shell settings put secure screensaver_components com.certificationtoolanddie.alienskies/com.certificationtoolanddie.alienskies.AlienSkiesDream
+  ```
+
+The release build is signed with a development key, which is fine for sideloading. Publishing to Google Play needs your own signing key.
+
+### Command-line switches (Windows)
 
 | Switch | Meaning |
 |---|---|
@@ -80,7 +100,7 @@ A planet's orbit is a few AU across, which is tiny next to the parsecs between s
 
 ## Configuration
 
-Settings live in `%APPDATA%\AlienSkies\settings.json` and are edited through the settings dialog.
+Settings live in `%APPDATA%\AlienSkies\settings.json` on Windows (in the app's private storage on Android) and are edited through the settings dialog or the Android settings screen. Both are generated from the same settings class, so they always offer the same options.
 
 | Group | Setting | Notes |
 |---|---|---|
@@ -115,7 +135,9 @@ tools/build_catalog.sh --gaia-limit 10  # also add Gaia DR3 stars down to magnit
 cp data-out/*.csv "/mnt/c/Users/$USER/AppData/Roaming/AlienSkies/data/"
 ```
 
-The saver looks for each file in `%APPDATA%\AlienSkies\data`, then in a `data` folder next to the executable, and finally falls back to the embedded sample. The **Open data folder** link in the settings dialog takes you straight there.
+The Windows saver looks for each file in `%APPDATA%\AlienSkies\data`, then in a `data` folder next to the executable, and finally falls back to the embedded sample. The **Open data folder** link in the settings dialog takes you straight there.
+
+For Android, copy the CSVs into `src/AlienSkies.Android/Assets/data/` before building, and they're bundled into the APK.
 
 | File | Columns | Source |
 |---|---|---|
@@ -127,8 +149,11 @@ The saver looks for each file in `%APPDATA%\AlienSkies\data`, then in a `data` f
 
 ```
 src/AlienSkies.Core/          UI-free astronomy: coordinates, catalogs, orbit and spin, sky re-projection
-src/AlienSkies.Screensaver/   WinForms host: switch handling, settings dialog, multi-monitor, GDI+ renderer
+src/AlienSkies.Rendering/     Shared scene, settings and SkiaSharp renderer used by every host
+src/AlienSkies.Screensaver/   Windows host: switch handling, settings dialog, multi-monitor panorama
+src/AlienSkies.Android/       Android host: screen saver, live wallpaper (with a small Java shim), settings app
 tests/AlienSkies.Core.Tests/  xUnit tests: Sol seen from α Centauri, tidal locking, Kepler, reference frames
+tools/AlienSkies.Preview/     Renders single frames to PNG on any OS
 tools/                        Catalog builder (Python, with a WSL wrapper script)
 docs/DESIGN.md                The math, conventions, known simplifications and roadmap
 publish.ps1                   Builds AlienSkies.scr
@@ -143,7 +168,7 @@ Highlights, with the full list in [`docs/DESIGN.md`](docs/DESIGN.md):
 - A Milky Way band, atmospheric dimming near the horizon, and sky colour from the host star's temperature
 - Proper motion: the sky from there, thousands of years ago or ahead
 - Cinematic flights between systems in tour mode
-- A GPU renderer, and a macOS version sharing a WebGL renderer
+- GPU rendering, and a macOS version
 
 ## Acknowledgements
 

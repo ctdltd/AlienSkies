@@ -12,7 +12,7 @@ using Android.Widget;
 namespace AlienSkies.Droid;
 
 /// <summary>
-/// The app's launcher screen and the screen saver's settings page. Builds its form from the same
+/// The app's launcher screen and the settings page for both the screen saver and the live wallpaper. Builds its form from the same
 /// <see cref="SaverSettings"/> attributes the Windows PropertyGrid uses ([Category], [DisplayName],
 /// [Description]), so both platforms stay in step automatically. Changes are saved when you leave.
 /// </summary>
@@ -81,7 +81,8 @@ public sealed class SettingsActivity : Activity
         {
             Text = "The night sky as seen from a planet orbiting another star.\n\n" +
                    "To use as a screen saver: Settings → Display → Screen saver → Alien Skies. " +
-                   "It shows while the device is charging or docked.",
+                   "It shows while the device is charging or docked.\n\n" +
+                   "It also works as a live wallpaper: swiping between home-screen pages pans across the horizon.",
         };
         intro.SetPadding(0, 0, 0, Px(8));
         form.AddView(intro);
@@ -105,6 +106,17 @@ public sealed class SettingsActivity : Activity
         row.AddView(screenSaver);
 
         form.AddView(row);
+
+        var wallpaper = new Button(this) { Text = "Set as live wallpaper" };
+        wallpaper.Click += (_, _) =>
+        {
+            Persist();
+            var intent = new Intent(WallpaperManager.ActionChangeLiveWallpaper);
+            intent.PutExtra(WallpaperManager.ExtraLiveWallpaperComponent,
+                new ComponentName(this, Java.Lang.Class.FromType(typeof(AlienSkiesWallpaper))));
+            TryStart(intent, "This device does not support live wallpapers.");
+        };
+        form.AddView(wallpaper);
     }
 
     private void TryStart(Intent intent, string failureMessage)
