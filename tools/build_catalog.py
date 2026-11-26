@@ -145,7 +145,7 @@ def main() -> None:
     if not args.skip_planets:
         write(args.out / "exoplanets.csv", exoplanets())
 
-    # constellations.csv is curated by hand; copy the bundled one alongside.
+    # constellations.csv comes from tools/build_constellations.py; copy the bundled one alongside.
     src = SAMPLE_STARS.with_name("constellations.csv")
     (args.out / "constellations.csv").write_text(src.read_text())
 

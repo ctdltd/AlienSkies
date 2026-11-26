@@ -14,7 +14,7 @@ Move away from Earth and familiar constellations stretch and break apart. Our ow
 
 - **A real sky from another star.** Every catalog star is re-centred on the host star, with its direction and brightness recomputed for the new distance.
 - **Our Sun, labelled.** Sol is marked with its distance and apparent magnitude. The info line tells you where to look for it, by azimuth and altitude, even when it is off-screen or below the horizon, and how many years ago the light you're seeing left it.
-- **Earth's constellations, distorted.** Optionally, the figures of Orion and the Big Dipper are drawn so you can watch them warp with distance.
+- **Earth's constellations, distorted.** Optionally, the line figures of all 88 constellations are drawn so you can watch them warp with distance.
 - **A living planet.** It orbits its star on its real (Keplerian) orbit and spins on its axis. Tidally locked worlds even show the small wobble (libration) caused by an eccentric orbit.
 - **Day and night.** When the host star is up, the sky brightens and the stars wash out. Switch the atmosphere off for an airless world.
 - **Ground and horizon.** You're standing somewhere: pick your latitude, longitude and the direction you're facing.
@@ -143,7 +143,7 @@ For Android, copy the CSVs into `src/AlienSkies.Android/Assets/data/` before bui
 |---|---|---|
 | `stars.csv` | `hip, name, ra_deg, dec_deg, plx_mas, vmag, bv` | Hipparcos (I/239 photometry, I/311 parallaxes); optionally Gaia DR3 |
 | `exoplanets.csv` | `pl_name, hostname, ra, dec, sy_dist, sy_vmag, st_rad, st_mass, pl_orbsmax, pl_orbper, pl_orbincl, pl_orbeccen` | NASA Exoplanet Archive, Planetary Systems Composite Parameters |
-| `constellations.csv` | `constellation, from_id, to_id` | Hand-curated; ids match `stars.csv` |
+| `constellations.csv` | `constellation, from_id, to_id` | Stellarium's modern sky culture (all 88 IAU figures), via `tools/build_constellations.py`; ids match `stars.csv` |
 
 ## Project layout
 
@@ -164,7 +164,7 @@ publish.ps1                   Builds AlienSkies.scr
 Highlights, with the full list in [`docs/DESIGN.md`](docs/DESIGN.md):
 
 - Companion stars as second suns, and sibling planets as bright wandering lights (in the TRAPPIST-1 system they would look larger than our Moon)
-- All 88 of Earth's constellations, plus procedurally drawn *local* constellations
+- Procedurally drawn *local* constellations, linking each system's own brightest stars
 - A Milky Way band, atmospheric dimming near the horizon, and sky colour from the host star's temperature
 - Proper motion: the sky from there, thousands of years ago or ahead
 - Cinematic flights between systems in tour mode
@@ -178,6 +178,8 @@ This project uses data from:
 - **The ESA Hipparcos mission** (ESA 1997, *The Hipparcos and Tycho Catalogues*, ESA SP-1200), with parallaxes from the new reduction by van Leeuwen (2007, *A&A* 474, 653).
 - **The ESA mission Gaia** (https://www.cosmos.esa.int/gaia), processed by the Gaia Data Processing and Analysis Consortium (DPAC, https://www.cosmos.esa.int/web/gaia/dpac/consortium). Funding for the DPAC has been provided by national institutions, in particular the institutions participating in the Gaia Multilateral Agreement.
 - **The VizieR catalogue access tool**, CDS, Strasbourg, France.
+- **Stellarium** (https://stellarium.org): constellation figures from its *modern* sky culture, © the Stellarium team, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). The derived `constellations.csv` is shared under the same license.
+- **The HYG database** v4.0 (https://github.com/astronexus/HYG-Database), [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/): positions and magnitudes for the constellation stars added to the bundled sample `stars.csv`.
 
 ## License
 
