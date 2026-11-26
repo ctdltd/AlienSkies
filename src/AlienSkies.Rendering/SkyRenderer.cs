@@ -29,27 +29,44 @@ public sealed class SkyRenderer : IDisposable
     {
         double t = scene.TimeDays;
         var horizon = scene.Frame.Horizon(t);
+        var planetOffset = scene.Frame.PlanetOffsetAu(t);
         var (hostDir, hostDistAu) = scene.Frame.HostStarFromPlanet(t);
-        var hostLocal = horizon.ToLocal(hostDir);
-        double hostAlt = Math.Asin(Math.Clamp(hostLocal.Z, -1, 1));
-
-        // Daylight: 0 at astronomical twilight (-18°), full once the star is 6° up, scaled by how
-        // bright the host looks. Our Sun (mag -26.7) gives full daylight; a dim red dwarf seen
-        // from a close orbit (TRAPPIST-1 from planet e, about -21) gives a deep-twilight sky.
-        double hostMag = AlienSky.HostApparentMagnitude(scene.Sky.Planet, hostDistAu);
-        double strength = Math.Clamp((-hostMag - 12) / 14.0, 0, 1);
-        double day = s.Atmosphere ? SmoothStep(-18 * Units.Deg, 6 * Units.Deg, hostAlt) * strength : 0;
         var hostColor = HostStarColor(scene.Sky.Planet);
-        canvas.Clear(Lerp(NightSky, Lerp(DaySky, hostColor, 0.35), day));
+        var host = new Sun(scene.Sky.Planet.HostName, horizon.ToLocal(hostDir), hostDistAu,
+            AlienSky.HostApparentMagnitude(scene.Sky.Planet, hostDistAu),
+            AlienSky.HostAngularRadius(scene.Sky.Planet, hostDistAu), hostColor);
+
+        var suns = new List<Sun> { host };
+        foreach (var c in scene.Sky.Companions)
+        {
+            var (dir, dist) = c.FromPlanet(planetOffset);
+            suns.Add(new Sun(c.Name ?? c.Id, horizon.ToLocal(dir), dist, c.ApparentMagnitude(dist), c.AngularRadius(dist), BvToColor(c.ColorBV)));
+        }
+
+        // Daylight: 0 at astronomical twilight (-18°), full once a sun is 6° up, scaled by how bright
+        // it looks. Our Sun (mag -26.7) gives full daylight; a dim red dwarf seen from a close orbit
+        // (TRAPPIST-1 from planet e, about -21) gives a deep-twilight sky, and so does Toliman (about -19)
+        // standing alone in the sky of an α Cen A planet. With two suns up, the brighter one wins.
+        double day = 0;
+        var skyTint = hostColor;
+        if (s.Atmosphere)
+        {
+            foreach (var sun in suns)
+            {
+                double d = SmoothStep(-18 * Units.Deg, 6 * Units.Deg, sun.Altitude) * sun.Strength;
+                if (d > day) (day, skyTint) = (d, sun.Color);
+            }
+        }
+        canvas.Clear(Lerp(NightSky, Lerp(DaySky, skyTint, 0.35), day));
         double limit = s.LimitingMagnitude - day * (s.LimitingMagnitude + 3.5); // daylight washes stars out
 
         var cam = new Camera(size, s.ViewAzimuthDeg + azimuthOffsetDeg, s.ViewAltitudeDeg, s.FieldOfViewDeg);
 
         if (s.ShowConstellations) DrawConstellations(canvas, scene, horizon, cam, s, day, density);
         DrawStars(canvas, scene, horizon, cam, s, limit, density);
-        DrawHostStar(canvas, scene, hostLocal, hostDistAu, cam, hostColor, density);
+        for (int i = suns.Count - 1; i >= 0; i--) DrawSun(canvas, suns[i], cam, density); // host on top
         if (s.ShowGround) DrawGround(canvas, cam, size, day);
-        if (s.ShowInfo) DrawInfo(canvas, size, scene, horizon, hostAlt, hostDistAu, s.MarkSol, density);
+        if (s.ShowInfo) DrawInfo(canvas, size, scene, horizon, suns, s.MarkSol, density);
     }
 
     private void DrawStars(SKCanvas canvas, SkyScene scene, HorizonBasis horizon, Camera cam,
@@ -108,18 +125,18 @@ public sealed class SkyRenderer : IDisposable
         }
     }
 
-    private void DrawHostStar(SKCanvas canvas, SkyScene scene, Vector3d hostLocal, double distAu, Camera cam,
-                              SKColor color, float density)
+    private void DrawSun(SKCanvas canvas, Sun sun, Camera cam, float density)
     {
-        if (cam.Project(hostLocal) is not SKPoint p) return;
-        double angR = AlienSky.HostAngularRadius(scene.Sky.Planet, distAu);
-        float r = (float)Math.Max(3 * density, angR * cam.Focal);
+        if (cam.Project(sun.Local) is not SKPoint p) return;
+        float r = (float)Math.Max(3 * density, sun.AngularRadius * cam.Focal);
+        // A fainter sun gets a tighter glow: 6 disc radii for a full-daylight star, 2 for one too faint to light the sky.
+        float glowR = r * (float)(2 + 4 * sun.Strength);
 
-        using (var glow = SKShader.CreateRadialGradient(p, r * 6, [color.WithAlpha(150), color.WithAlpha(0)], SKShaderTileMode.Clamp))
+        using (var glow = SKShader.CreateRadialGradient(p, glowR, [sun.Color.WithAlpha(150), sun.Color.WithAlpha(0)], SKShaderTileMode.Clamp))
         using (var glowPaint = new SKPaint { IsAntialias = true, Shader = glow })
-            canvas.DrawCircle(p, r * 6, glowPaint);
+            canvas.DrawCircle(p, glowR, glowPaint);
 
-        _fill.Color = Lerp(color, SKColors.White, 0.4); // the disc itself reads paler than its glow
+        _fill.Color = Lerp(sun.Color, SKColors.White, 0.4); // the disc itself reads paler than its glow
         canvas.DrawCircle(p, r, _fill);
     }
 
@@ -144,7 +161,7 @@ public sealed class SkyRenderer : IDisposable
     }
 
     private void DrawInfo(SKCanvas canvas, SKSizeI size, SkyScene scene, HorizonBasis horizon,
-                          double hostAlt, double hostDistAu, bool markSol, float density)
+                          IReadOnlyList<Sun> suns, bool markSol, float density)
     {
         var c = scene.Config;
         var p = scene.Sky.Planet;
@@ -153,8 +170,10 @@ public sealed class SkyRenderer : IDisposable
         {
             $"The sky from {p.PlanetName}  ·  orbiting {p.HostName}, {scene.DistanceFromEarthLy:0.#} ly from Earth",
             $"Lat {c.LatitudeDeg:0.#}°  Lon {c.LongitudeDeg:0.#}°  ·  orbit {c.SemiMajorAxisAu:0.###} AU / {c.OrbitalPeriodDays:0.##} d  ·  {spin}  ·  " +
-            $"{p.HostName} at {hostAlt / Units.Deg:0}° altitude, mag {AlienSky.HostApparentMagnitude(p, hostDistAu):0.0}",
+            $"{p.HostName} at {suns[0].Altitude / Units.Deg:0}° altitude, mag {suns[0].Magnitude:0.0}",
         };
+        foreach (var sun in suns.Skip(1))
+            lines.Add($"Second sun {sun.Name}: {sun.Altitude / Units.Deg:0}° altitude, mag {sun.Magnitude:0.0}, {sun.DistanceAu:0.#} AU away");
 
         // Where to look for home, even when it is off-screen or below the horizon.
         if (markSol && scene.StarsById.TryGetValue(AlienSky.SolId, out var sol))
@@ -180,6 +199,15 @@ public sealed class SkyRenderer : IDisposable
     }
 
     // ---- helpers -----------------------------------------------------------
+
+    /// <summary>A star close enough to show a disc and light the sky: the host, or a companion in a multiple system.</summary>
+    private readonly record struct Sun(string Name, Vector3d Local, double DistanceAu, double Magnitude, double AngularRadius, SKColor Color)
+    {
+        public double Altitude => Math.Asin(Math.Clamp(Local.Z, -1, 1));
+
+        /// <summary>0 for a star too faint to light the sky (mag -12), 1 for full daylight (mag -26).</summary>
+        public double Strength => Math.Clamp((-Magnitude - 12) / 14.0, 0, 1);
+    }
 
     private static SKColor BvToColor(double bv)
     {

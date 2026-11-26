@@ -34,6 +34,22 @@ Every host does the same three things: build a `SaverSettings`, wrap it in a `Sk
 
 Every vector stays in ICRS-aligned axes, so no rotation matrices pile up.
 
+### Companion stars (second suns)
+
+Catalog stars within max(0.02 pc, 0.5% of the host distance) of the host position are members of the host's own system. The nearest one is the host itself. The others become `CompanionStar`s instead of fixed stars:
+
+* Their parallaxes are no better than the cross-match slop, so the line-of-sight offset is discarded and only the sky-plane (projected) separation is kept, converted to AU. That is the closest the pair can be, so the companion is never too faint.
+* Unlike fixed stars, a companion is re-aimed every frame from the planet's position (`offset − planetOffset`), so a planet's orbit gives it a few degrees of parallax and a small brightness swing.
+* The disc size is estimated along the main sequence (R ∝ L^0.2). Daylight comes from whichever sun is brightest above the horizon, so a companion alone in the sky gives a twilight glow.
+
+From the α Cen A sample, Toliman (α Cen B) sits about 24 AU away at magnitude −19, about 300 times brighter than our full Moon:
+
+![Sunset with Toliman above alf Cen A](images/alpha-cen-two-suns.png)
+
+![Toliman alone in the sky after alf Cen A has set](images/alpha-cen-toliman-night.png)
+
+Reproduce with `dotnet run --project tools/AlienSkies.Preview -- --planet "alf Cen A (hypothetical Earth)" --days 4.75 --az 285 --alt 12` and `--days 237.31 --az 62 --alt 25`.
+
 ## Conventions
 
 * **Inclination and ascending node** use exoplanet-archive conventions, measured against the plane of *Earth's* sky. Inclination 0° is face-on to us and 90° is edge-on. That is why the default is 90° rather than 0°: almost every planet with a well-measured inclination was found by transit, so it is nearly edge-on. A consequence is that **our Sun lies close to that planet's ecliptic**, so Sol passes through their zodiac. With an inclination of 0°, Sol would instead sit at their ecliptic pole.
@@ -46,7 +62,8 @@ Every vector stays in ICRS-aligned axes, so no rotation matrices pile up.
 
 * Proper motion and radial velocity are not yet propagated. That matters for nearby systems and for a "simultaneous" sky.
 * Interstellar extinction is ignored, so distant stars look slightly too bright.
-* Binary companions within max(0.02 pc, 0.5% of the host distance) are removed as "self". From the α Cen A sample, Toliman (α Cen B) disappears even though it should be a second sun of roughly magnitude −19.
+* Companion stars are static: they sit at their catalog projected separation and do not follow their binary orbit (α Cen AB: 79.9 yr, 11–36 AU). Circumbinary planets (Kepler-16) would need the planet to orbit the barycentre instead of one star.
+* If the host itself is missing from the star catalog, its nearest companion is taken for the host.
 * Host luminosity comes from the archive's `sy_vmag`, which is the *system* magnitude and slightly too bright for multiples.
 * The B−V colour ramp is approximate. Gaia stars use a rough BP−RP → B−V stand-in.
 * The SkiaSharp renderer draws on the CPU. It should handle tens of thousands of visible stars, but a GPU path (Skia's GL backend) is the next step if a full Gaia catalog is used.
@@ -56,7 +73,7 @@ Every vector stays in ICRS-aligned axes, so no rotation matrices pile up.
 ## Roadmap ideas
 
 **Sky realism**
-* Companion stars in multiple systems as second suns (α Cen, the Kepler-16 circumbinary planets)
+* Binary orbits for companion stars, and circumbinary planets (Kepler-16)
 * Sibling planets visible as "wanderers" (in TRAPPIST-1 they would appear larger than our Moon)
 * Moons, user-defined
 * Atmospheric extinction and airmass dimming near the horizon, plus sky colour from host temperature (red-dwarf daylight)
