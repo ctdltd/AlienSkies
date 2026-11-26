@@ -6,7 +6,8 @@ namespace AlienSkies.Core.Catalog;
 
 /// <summary>
 /// Loads star, exoplanet and constellation-line catalogs.
-/// Search order for each file: %APPDATA%\AlienSkies\data, &lt;exe dir&gt;\data, then the embedded sample.
+/// Search order for each file: %APPDATA%\AlienSkies\data, &lt;exe dir&gt;\data, <see cref="PlatformSource"/>
+/// (e.g. Android assets), then the embedded sample.
 /// Drop full catalogs produced by tools/build_catalog.py into either folder to override the samples.
 /// </summary>
 public static class CatalogLoader
@@ -14,6 +15,12 @@ public static class CatalogLoader
     public const string StarsFile = "stars.csv";
     public const string ExoplanetsFile = "exoplanets.csv";
     public const string ConstellationsFile = "constellations.csv";
+
+    /// <summary>
+    /// Optional host-supplied source tried after the disk folders, e.g. Android's AssetManager.
+    /// Return null when the host has no such file.
+    /// </summary>
+    public static Func<string, Stream?>? PlatformSource { get; set; }
 
     public static IEnumerable<string> SearchFolders()
     {
@@ -33,6 +40,7 @@ public static class CatalogLoader
             var path = Path.Combine(folder, fileName);
             if (File.Exists(path)) return new StreamReader(path);
         }
+        if (PlatformSource?.Invoke(fileName) is Stream platform) return new StreamReader(platform);
         var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("AlienSkies.Data." + fileName)
             ?? throw new FileNotFoundException($"No catalog file '{fileName}' found on disk or embedded.");
         return new StreamReader(stream);

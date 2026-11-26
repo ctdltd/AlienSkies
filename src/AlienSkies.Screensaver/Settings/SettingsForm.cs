@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using AlienSkies.Rendering;
 
 namespace AlienSkies.Screensaver.Settings;
 

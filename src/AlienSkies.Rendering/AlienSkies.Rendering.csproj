@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Platform-neutral scene, settings and SkiaSharp renderer, shared by the
+       Windows screen saver and the Android screen saver / live wallpaper. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>AlienSkies.Rendering</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="4.157.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AlienSkies.Core\AlienSkies.Core.csproj" />
+  </ItemGroup>
+
+</Project>

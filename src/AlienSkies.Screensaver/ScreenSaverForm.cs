@@ -1,6 +1,5 @@
+using AlienSkies.Rendering;
 using AlienSkies.Screensaver.Native;
-using AlienSkies.Screensaver.Rendering;
-using AlienSkies.Screensaver.Settings;
 
 namespace AlienSkies.Screensaver;
 
@@ -8,7 +7,8 @@ public enum SaverMode { FullScreen, Preview, Windowed }
 
 /// <summary>
 /// One window per monitor in full-screen mode; a child of the Control Panel thumbnail in preview mode;
-/// a normal resizable window in windowed (/w) debug mode.
+/// a normal resizable window in windowed (/w) debug mode. Drawing is done by the shared
+/// SkiaSharp <see cref="SkyRenderer"/> on a <see cref="SkiaPanel"/>.
 /// </summary>
 public sealed class ScreenSaverForm : Form
 {
@@ -20,7 +20,8 @@ public sealed class ScreenSaverForm : Form
     private readonly SaverMode _mode;
     private readonly double _azimuthOffsetDeg;
     private readonly IntPtr _previewParent;
-    private readonly System.Windows.Forms.Timer _timer = new() { Interval = 40 };
+    private readonly SkiaPanel _canvas = new() { Dock = DockStyle.Fill };
+    private readonly System.Windows.Forms.Timer _timer = new() { Interval = 33 };
     private Point? _mouseOrigin;
 
     public ScreenSaverForm(SkyScene scene, SaverSettings settings, SaverMode mode,
@@ -34,8 +35,7 @@ public sealed class ScreenSaverForm : Form
 
         Text = "Alien Skies";
         BackColor = Color.Black;
-        SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer |
-                 ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
+        KeyPreview = true;
 
         if (mode == SaverMode.Windowed)
         {
@@ -51,11 +51,16 @@ public sealed class ScreenSaverForm : Form
             if (mode == SaverMode.FullScreen) TopMost = true;
         }
 
+        _canvas.PaintSurface += OnPaintSurface;
+        _canvas.MouseMove += (_, _) => OnUserMouseMove();
+        _canvas.MouseDown += (_, _) => { if (_mode == SaverMode.FullScreen) Application.Exit(); };
+        Controls.Add(_canvas);
+
         _timer.Tick += (_, _) =>
         {
             if (_mode == SaverMode.Preview && !NativeMethods.IsWindow(_previewParent)) { Application.Exit(); return; }
             _scene.Tick();
-            Invalidate();
+            _canvas.Invalidate();
         };
     }
 
@@ -79,35 +84,34 @@ public sealed class ScreenSaverForm : Form
         _timer.Start();
     }
 
-    protected override void OnPaint(PaintEventArgs e)
+    private void OnPaintSurface(object? sender, SkiaPaintEventArgs e)
     {
+        var canvas = e.Canvas;
         try
         {
-            _renderer.Draw(e.Graphics, ClientSize, _scene, _settings, _azimuthOffsetDeg);
+            float density = DeviceDpi / 96f;
+            if (_mode == SaverMode.Preview) density = 0.5f; // the preview monitor is tiny
+            _renderer.Draw(canvas, e.Size, _scene, _settings, _azimuthOffsetDeg, density);
         }
         catch (Exception ex) when (_mode != SaverMode.FullScreen)
         {
-            e.Graphics.DrawString(ex.Message, Font, Brushes.OrangeRed, 8, 8);
+            using var paint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColors.OrangeRed };
+            using var font = new SkiaSharp.SKFont { Size = 14 };
+            canvas.Clear(SkiaSharp.SKColors.Black);
+            canvas.DrawText(ex.Message, 8, 20, SkiaSharp.SKTextAlign.Left, font, paint);
         }
     }
 
     // ---- wake-up handling (full screen only) --------------------------------
 
-    protected override void OnMouseMove(MouseEventArgs e)
+    private void OnUserMouseMove()
     {
-        base.OnMouseMove(e);
         if (_mode != SaverMode.FullScreen) return;
         var pos = Cursor.Position;
         _mouseOrigin ??= pos;
         if (Math.Abs(pos.X - _mouseOrigin.Value.X) > MouseWakeThresholdPx ||
             Math.Abs(pos.Y - _mouseOrigin.Value.Y) > MouseWakeThresholdPx)
             Application.Exit();
-    }
-
-    protected override void OnMouseDown(MouseEventArgs e)
-    {
-        base.OnMouseDown(e);
-        if (_mode == SaverMode.FullScreen) Application.Exit();
     }
 
     protected override void OnKeyDown(KeyEventArgs e)
@@ -118,7 +122,11 @@ public sealed class ScreenSaverForm : Form
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) _timer.Dispose();
+        if (disposing)
+        {
+            _timer.Dispose();
+            _renderer.Dispose();
+        }
         base.Dispose(disposing);
     }
 }

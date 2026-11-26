@@ -2,9 +2,8 @@ using System.Diagnostics;
 using AlienSkies.Core.Astronomy;
 using AlienSkies.Core.Catalog;
 using AlienSkies.Core.Math;
-using AlienSkies.Screensaver.Settings;
 
-namespace AlienSkies.Screensaver.Rendering;
+namespace AlienSkies.Rendering;
 
 /// <summary>
 /// The simulation state shared by every monitor: which planet, where the observer stands, and the clock.

@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AlienSkies.Core\AlienSkies.Core.csproj" />
+    <ProjectReference Include="..\AlienSkies.Rendering\AlienSkies.Rendering.csproj" />
   </ItemGroup>
 
 </Project>

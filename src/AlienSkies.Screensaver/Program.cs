@@ -1,4 +1,4 @@
-using AlienSkies.Screensaver.Rendering;
+using AlienSkies.Rendering;
 using AlienSkies.Screensaver.Settings;
 
 namespace AlienSkies.Screensaver;

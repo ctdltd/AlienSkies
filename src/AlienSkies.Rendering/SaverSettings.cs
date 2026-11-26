@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using AlienSkies.Core.Catalog;
 
-namespace AlienSkies.Screensaver.Settings;
+namespace AlienSkies.Rendering;
 
 public enum RotationMode
 {
