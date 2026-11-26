@@ -42,6 +42,7 @@ public class AstronomyTests
     {
         var sky = AlienSky.Build(AlphaCenA(), CatalogLoader.LoadStars());
         Assert.DoesNotContain(sky.Stars, s => s.Name == "Rigil Kentaurus");
+        Assert.DoesNotContain(sky.Companions, s => s.Name == "Rigil Kentaurus");
         Assert.Contains(sky.Stars, s => s.Name == "Sirius");
     }
 

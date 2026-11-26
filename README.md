@@ -30,7 +30,7 @@ Early development. The astronomy core is unit-tested. All hosts draw with one sh
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) to build
 - **Windows saver:** Windows 10 or 11, x64. A framework-dependent build needs the .NET 10 Desktop Runtime; a self-contained build needs nothing extra.
-- **Android:** the .NET `android` workload (`dotnet workload install android`) to build; Android 8.0 (API 26) or later to run
+- **Android:** to build, the .NET `android` workload, a JDK (17 or later) and the Android SDK (see [Android](#android)); Android 8.0 (API 26) or later to run. The Android app builds on Windows, macOS or Linux.
 - Optional, for the full catalogs: Python 3 (WSL works well) with `pyvo`
 
 ## Build, run and install
@@ -39,8 +39,11 @@ Early development. The astronomy core is unit-tested. All hosts draw with one sh
 git clone https://github.com/ctdltd/AlienSkies.git
 cd AlienSkies
 
-dotnet build
+dotnet build          # whole solution, including Android (needs the android workload)
 dotnet test
+
+# Without the android workload, build just what you need:
+dotnet build src/AlienSkies.Screensaver
 
 # Try it in a normal, resizable window (Esc closes):
 dotnet run --project src/AlienSkies.Screensaver -- /w
@@ -48,6 +51,14 @@ dotnet run --project src/AlienSkies.Screensaver -- /w
 # Open the settings dialog:
 dotnet run --project src/AlienSkies.Screensaver -- /c
 ```
+
+Render a single frame to a PNG, on any OS (handy for checking drawing changes without a screen saver):
+
+```bash
+dotnet run --project tools/AlienSkies.Preview -- --planet "TRAPPIST-1 e" --lat 30 --az 180 --out sky.png
+```
+
+Other options are `--lon`, `--days`, `--alt`, `--fov`, `--width`, `--height` and `--density`.
 
 Build the screen saver file:
 
@@ -60,12 +71,46 @@ This produces `artifacts\AlienSkies.scr`. Right-click it and choose **Install**,
 
 ### Android
 
+**One-time setup.** Install the workload, then the JDK and Android SDK. Visual Studio's ".NET Multi-platform App UI" workload installs all three; from the command line:
+
 ```powershell
-dotnet publish src/AlienSkies.Android -c Release
-adb install src/AlienSkies.Android/bin/Release/net10.0-android/publish/com.certificationtoolanddie.alienskies-Signed.apk
+dotnet workload install android
+
+# Downloads the Android SDK and platform tools (adb) into the folder you name.
+# Point JavaSdkDirectory at an installed JDK 17+, e.g. Microsoft Build of OpenJDK.
+dotnet build src/AlienSkies.Android -t:InstallAndroidDependencies `
+  -p:AndroidSdkDirectory="$HOME/android-sdk" -p:JavaSdkDirectory="<path to JDK>" `
+  -p:AcceptAndroidSDKLicenses=True
 ```
 
-The app opens to its settings screen, which has **Preview**, **Screen saver settings** and **Set as live wallpaper** buttons.
+If the SDK or JDK isn't in a default location, pass the same `-p:AndroidSdkDirectory=...` and `-p:JavaSdkDirectory=...` to the build and publish commands below, or set the `ANDROID_HOME` and `JAVA_HOME` environment variables.
+
+**Build the APK.**
+
+```powershell
+dotnet publish src/AlienSkies.Android -c Release
+```
+
+This writes two packages to `src/AlienSkies.Android/bin/Release/net10.0-android/publish/`:
+
+- `com.certificationtoolanddie.alienskies-Signed.apk`, for installing directly (sideloading)
+- `com.certificationtoolanddie.alienskies-Signed.aab`, the bundle format Google Play wants
+
+**Install it.** Either way works:
+
+- **With adb (USB or Wi-Fi debugging).** Turn on Developer options on the device (tap **Build number** seven times in Settings → About phone), enable **USB debugging**, connect it, and run:
+
+  ```powershell
+  adb devices    # the device should be listed as "device", not "unauthorized"
+  adb install -r src/AlienSkies.Android/bin/Release/net10.0-android/publish/com.certificationtoolanddie.alienskies-Signed.apk
+  ```
+
+  `-r` replaces an installed copy and keeps its settings. `adb` lives in `platform-tools` inside the Android SDK folder. For Android TV, use `adb connect <tv-ip-address>` first.
+- **Without adb.** Copy the `.apk` to the device (USB, cloud drive, email), open it in a file manager, and allow that app to **install unknown apps** when Android asks.
+
+To remove it: `adb uninstall com.certificationtoolanddie.alienskies`, or uninstall it from the device's app settings.
+
+**Use it.** The app opens to its settings screen, which has **Preview**, **Screen saver settings** and **Set as live wallpaper** buttons.
 
 - **Screen saver:** Settings → Display → Screen saver → Alien Skies. It runs while the device is charging or docked; a touch dismisses it.
 - **Live wallpaper:** use the button in the app, or pick Alien Skies in the system wallpaper picker. Swiping between home-screen pages pans the view; the info text is hidden so it doesn't clutter the home screen.
@@ -75,7 +120,7 @@ The app opens to its settings screen, which has **Preview**, **Screen saver sett
   adb shell settings put secure screensaver_components com.certificationtoolanddie.alienskies/com.certificationtoolanddie.alienskies.AlienSkiesDream
   ```
 
-The release build is signed with a development key, which is fine for sideloading. Publishing to Google Play needs your own signing key.
+The release build is signed with the SDK's debug key, which is fine for sideloading. An APK built on a different machine has a different key, so Android refuses to install it over the old one; uninstall first. Publishing to Google Play needs your own signing key (`AndroidKeyStore` and the related MSBuild properties).
 
 ### Command-line switches (Windows)
 
@@ -137,7 +182,7 @@ cp data-out/*.csv "/mnt/c/Users/$USER/AppData/Roaming/AlienSkies/data/"
 
 The Windows saver looks for each file in `%APPDATA%\AlienSkies\data`, then in a `data` folder next to the executable, and finally falls back to the embedded sample. The **Open data folder** link in the settings dialog takes you straight there.
 
-For Android, copy the CSVs into `src/AlienSkies.Android/Assets/data/` before building, and they're bundled into the APK.
+For Android, copy the CSVs into `src/AlienSkies.Android/Assets/data/` before building, and they're bundled into the APK. The app looks in its private storage first, then in those bundled assets, and finally falls back to the embedded sample. The full Hipparcos catalog adds a few megabytes to the APK.
 
 | File | Columns | Source |
 |---|---|---|
