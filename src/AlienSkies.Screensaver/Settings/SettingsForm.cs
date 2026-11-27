@@ -41,6 +41,10 @@ public sealed class SettingsForm : Form
         var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, AutoSize = true };
         var data = new LinkLabel { Text = "Open data folder", AutoSize = true, Margin = new Padding(3, 9, 12, 3) };
 
+        // The dialog runs as the application's main window (Application.Run), not through ShowDialog, so a button's
+        // DialogResult alone doesn't close it: close explicitly. OnFormClosed saves when the result is OK.
+        ok.Click += (_, _) => Close();
+        cancel.Click += (_, _) => Close();
         test.Click += (_, _) =>
         {
             _working.Save();
