@@ -30,17 +30,12 @@ public sealed class SkyScene
     public SkyScene(SaverSettings settings)
     {
         _settings = settings;
-        var planet = ImaginaryPlanet(settings)
-                     ?? Planets.Value.FirstOrDefault(p => p.PlanetName.Equals(settings.PlanetName, StringComparison.OrdinalIgnoreCase))
-                     ?? Planets.Value[0];
-        Load(planet, settings.LatitudeDeg, settings.LongitudeDeg);
+        double lat = settings.LatitudeDeg, lon = settings.LongitudeDeg;
+        var config = settings.SelectedImaginaryPlanet()?.ToConfig(Catalog.Value, lat, lon)
+                     ?? CatalogConfig(Planets.Value.FirstOrDefault(p =>
+                            p.PlanetName.Equals(settings.PlanetName, StringComparison.OrdinalIgnoreCase)) ?? Planets.Value[0], lat, lon);
+        Load(config);
     }
-
-    /// <summary>The user's made-up planet, or null when none is set or its host star isn't in the catalog.</summary>
-    private static ExoplanetSystem? ImaginaryPlanet(SaverSettings settings) =>
-        settings.HasImaginaryPlanet && Star.Find(Catalog.Value, settings.ImaginaryHostStar) is { } host
-            ? ExoplanetSystem.Imaginary(host, settings.ImaginaryPlanetName)
-            : null;
 
     /// <summary>Simulated time in days since the orbit epoch.</summary>
     public double TimeDays => _epochDays + _clock.Elapsed.TotalSeconds * _settings.TimeScale / 86_400.0;
@@ -52,13 +47,22 @@ public sealed class SkyScene
         if (_clock.Elapsed - _lastHop < TimeSpan.FromMinutes(_settings.TourIntervalMinutes)) return;
 
         _lastHop = _clock.Elapsed;
-        var planet = Planets.Value[_random.Next(Planets.Value.Count)];
         // Uniform on the sphere, not uniform in latitude.
         double lat = Math.Asin(2 * _random.NextDouble() - 1) / Units.Deg;
-        Load(planet, lat, _random.NextDouble() * 360);
+        double lon = _random.NextDouble() * 360;
+
+        // Every catalog planet and every valid imaginary one get an equal chance.
+        var mine = _settings.TourIncludesImaginary ? _settings.ImaginaryPlanets : [];
+        int pick = _random.Next(Planets.Value.Count + mine.Count);
+        var config = pick < Planets.Value.Count
+            ? CatalogConfig(Planets.Value[pick], lat, lon)
+            : mine[pick - Planets.Value.Count].ToConfig(Catalog.Value, lat, lon)
+              ?? CatalogConfig(Planets.Value[_random.Next(Planets.Value.Count)], lat, lon);
+        Load(config);
     }
 
-    private void Load(ExoplanetSystem planet, double latitudeDeg, double longitudeDeg)
+    /// <summary>A catalog planet's orbit and spin, with the user's overrides from settings applied.</summary>
+    private PlanetConfig CatalogConfig(ExoplanetSystem planet, double latitudeDeg, double longitudeDeg)
     {
         var s = _settings;
         var catalog = PlanetConfig.FromCatalog(planet, latitudeDeg, longitudeDeg);
@@ -75,7 +79,7 @@ public sealed class SkyScene
             _ => catalog.TidallyLocked,
         };
 
-        var config = new PlanetConfig
+        return new PlanetConfig
         {
             Planet = planet,
             SemiMajorAxisAu = a,
@@ -90,9 +94,13 @@ public sealed class SkyScene
             LatitudeDeg = latitudeDeg,
             LongitudeDeg = longitudeDeg,
         };
+    }
 
+    private void Load(PlanetConfig config)
+    {
+        var s = _settings;
         Frame = new PlanetFrame(config);
-        Sky = AlienSky.Build(planet, Catalog.Value, s.LimitingMagnitude);
+        Sky = AlienSky.Build(config.Planet, Catalog.Value, s.LimitingMagnitude);
         StarsById = Sky.Stars.GroupBy(x => x.Id).ToDictionary(g => g.Key, g => g.First());
         _epochDays = s.StartDays - _clock.Elapsed.TotalSeconds * s.TimeScale / 86_400.0;
     }

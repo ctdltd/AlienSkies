@@ -25,6 +25,17 @@ public sealed class SettingsForm : Form
             ToolbarVisible = false,
         };
 
+        // Renaming the imaginary planet that's currently chosen keeps it chosen.
+        var selected = _working.SelectedImaginaryPlanet();
+        var selectedName = selected?.DisplayName;
+        grid.PropertyValueChanged += (_, _) =>
+        {
+            _working.FollowRename(selected, selectedName);
+            selected = _working.SelectedImaginaryPlanet();
+            selectedName = selected?.DisplayName;
+            grid.Refresh();
+        };
+
         var test = new Button { Text = "Test in window", AutoSize = true };
         var ok = new Button { Text = "OK", DialogResult = DialogResult.OK, AutoSize = true };
         var cancel = new Button { Text = "Cancel", DialogResult = DialogResult.Cancel, AutoSize = true };

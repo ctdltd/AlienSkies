@@ -21,8 +21,12 @@ var settings = new SaverSettings
     FieldOfViewDeg = D("fov", 100),
 };
 if (opts.TryGetValue("planet", out var planet)) settings.PlanetName = planet;
-if (opts.TryGetValue("star", out var star)) settings.ImaginaryHostStar = star;       // imaginary planet around any catalog star
-if (opts.TryGetValue("name", out var name)) settings.ImaginaryPlanetName = name;
+if (opts.TryGetValue("star", out var star))   // imaginary planet around any catalog star
+{
+    var mine = new AlienSkies.Core.Astronomy.ImaginaryPlanet { HostStar = star, Name = Get("name", "") };
+    settings.ImaginaryPlanets.Add(mine);
+    settings.PlanetName = mine.DisplayName;
+}
 
 var size = new SKSizeI((int)D("width", 1600), (int)D("height", 900));
 var scene = new SkyScene(settings);

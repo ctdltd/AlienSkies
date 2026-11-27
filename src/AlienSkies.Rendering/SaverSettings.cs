@@ -1,16 +1,10 @@
 using System.ComponentModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using AlienSkies.Core.Astronomy;
 using AlienSkies.Core.Catalog;
 
 namespace AlienSkies.Rendering;
-
-public enum RotationMode
-{
-    [Description("Auto (locked if orbit < 0.1 AU)")] Auto,
-    TidallyLocked,
-    Free,
-}
 
 /// <summary>
 /// User-facing configuration, edited in a PropertyGrid and stored as JSON in
@@ -20,27 +14,30 @@ public sealed class SaverSettings
 {
     // ---- Planet ------------------------------------------------------------
     [Category("1. Planet"), DisplayName("Planet"), TypeConverter(typeof(PlanetNameConverter))]
-    [Description("Catalog planet to stand on, chosen from the exoplanet catalog. Ignored while an imaginary planet's host star is set.")]
+    [Description("Planet to stand on: one of yours from Imaginary planets, or any planet in the exoplanet catalog.")]
     public string PlanetName { get; set; } = "alf Cen A (hypothetical Earth)";
 
-    /// <summary>Value of <see cref="ImaginaryHostStar"/> meaning "no imaginary planet, use <see cref="PlanetName"/>".</summary>
-    public const string NoImaginaryHost = "(none)";
+    [Category("1. Planet"), DisplayName("Imaginary planets")]
+    [Description("Your own made-up planets around any catalog star, each with its own orbit and spin. They appear in the Planet list, and tour mode can visit them.")]
+    public List<ImaginaryPlanet> ImaginaryPlanets { get; set; } = [];
 
-    [Category("1. Planet"), DisplayName("Imaginary planet: host star"), TypeConverter(typeof(StarNameConverter))]
-    [Description("Pick any catalog star to put your own made-up planet around it (overrides Planet). It starts where it gets Earth's sunlight, on a circular orbit; turn off 'Use catalog orbit' to set your own orbit below. (none) = use the catalog planet.")]
-    public string ImaginaryHostStar { get; set; } = NoImaginaryHost;
+    /// <summary>The imaginary planet chosen as <see cref="PlanetName"/>, if any.</summary>
+    public ImaginaryPlanet? SelectedImaginaryPlanet() =>
+        ImaginaryPlanets.FirstOrDefault(p => p.DisplayName.Equals(PlanetName?.Trim(), StringComparison.OrdinalIgnoreCase));
 
-    [Category("1. Planet"), DisplayName("Imaginary planet: name")]
-    [Description("Optional name for your imaginary planet, shown in the info overlay.")]
-    public string ImaginaryPlanetName { get; set; } = "";
-
-    /// <summary>True when an imaginary planet's host star is chosen.</summary>
-    [Browsable(false), JsonIgnore]
-    public bool HasImaginaryPlanet =>
-        !string.IsNullOrWhiteSpace(ImaginaryHostStar) && ImaginaryHostStar.Trim() != NoImaginaryHost;
+    /// <summary>
+    /// Keeps the selection on an imaginary planet that was renamed while editing: <paramref name="selected"/> and
+    /// <paramref name="oldName"/> are what <see cref="SelectedImaginaryPlanet"/> returned before the edit.
+    /// </summary>
+    public void FollowRename(ImaginaryPlanet? selected, string? oldName)
+    {
+        if (selected is not null && ImaginaryPlanets.Contains(selected) &&
+            string.Equals(PlanetName?.Trim(), oldName, StringComparison.OrdinalIgnoreCase))
+            PlanetName = selected.DisplayName;
+    }
 
     [Category("1. Planet"), DisplayName("Use catalog orbit")]
-    [Description("True: orbit values come from the exoplanet catalog (unknowns get defaults); for an imaginary planet, an Earth-like circular orbit. False: use the overrides below.")]
+    [Description("Catalog planets only (imaginary planets have their own orbit). True: orbit values come from the exoplanet catalog, unknowns get defaults. False: use the overrides below.")]
     public bool UseCatalogOrbit { get; set; } = true;
 
     [Category("1. Planet"), DisplayName("Orbital radius (AU)")]
@@ -64,7 +61,7 @@ public sealed class SaverSettings
 
     // ---- Spin --------------------------------------------------------------
     [Category("2. Spin"), DisplayName("Rotation")]
-    [Description("Tidally locked worlds keep their star fixed in the sky; the stars still wheel past once per orbit.")]
+    [Description("Catalog planets only (imaginary planets have their own spin). Tidally locked worlds keep their star fixed in the sky; the stars still wheel past once per orbit.")]
     public RotationMode RotationMode { get; set; } = RotationMode.Auto;
 
     [Category("2. Spin"), DisplayName("Rotation period (hours)")]
@@ -144,6 +141,10 @@ public sealed class SaverSettings
     [Description("Hop to a random catalog planet (and random latitude) at a fixed interval.")]
     public bool TourMode { get; set; }
 
+    [Category("6. Tour"), DisplayName("Include imaginary planets")]
+    [Description("Let the tour visit your imaginary planets as well as catalog ones.")]
+    public bool TourIncludesImaginary { get; set; } = true;
+
     [Category("6. Tour"), DisplayName("Tour interval (minutes)")]
     public double TourIntervalMinutes { get; set; } = 5;
 
@@ -182,23 +183,9 @@ public sealed class SaverSettings
 }
 
 /// <summary>
-/// Offers named catalog stars as a drop-down, after "(none)". Not exclusive, so on Windows you can also type
-/// "HIP 12345" for an unnamed star.
+/// Offers the user's imaginary planets, then catalog planet names, as a drop-down (PropertyGrid on Windows, Spinner on
+/// Android); only listed names are accepted. The imaginary ones come from the settings being edited (the context's instance).
 /// </summary>
-public sealed class StarNameConverter : StringConverter
-{
-    private static readonly Lazy<string[]> Names = new(() =>
-        new[] { SaverSettings.NoImaginaryHost }
-            .Concat(CatalogLoader.LoadStars().Select(s => s.Name).OfType<string>()
-                .Distinct(StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase))
-            .ToArray());
-
-    public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) => true;
-    public override bool GetStandardValuesExclusive(ITypeDescriptorContext? context) => false;
-    public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context) => new(Names.Value);
-}
-
-/// <summary>Offers catalog planet names as a drop-down (PropertyGrid on Windows, Spinner on Android); only listed names are accepted.</summary>
 public sealed class PlanetNameConverter : StringConverter
 {
     private static readonly Lazy<string[]> Names = new(() =>
@@ -206,5 +193,20 @@ public sealed class PlanetNameConverter : StringConverter
 
     public override bool GetStandardValuesSupported(ITypeDescriptorContext? context) => true;
     public override bool GetStandardValuesExclusive(ITypeDescriptorContext? context) => true;
-    public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context) => new(Names.Value);
+    public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext? context)
+    {
+        var mine = (context?.Instance as SaverSettings)?.ImaginaryPlanets.Select(p => p.DisplayName) ?? [];
+        return new(mine.Concat(Names.Value).Distinct(StringComparer.OrdinalIgnoreCase).ToArray());
+    }
+}
+
+/// <summary>Minimal <see cref="ITypeDescriptorContext"/> that just names the object being edited (for hosts without a PropertyGrid).</summary>
+public sealed class InstanceContext(object instance) : ITypeDescriptorContext
+{
+    public object Instance => instance;
+    public IContainer? Container => null;
+    public PropertyDescriptor? PropertyDescriptor => null;
+    public bool OnComponentChanging() => true;
+    public void OnComponentChanged() { }
+    public object? GetService(Type serviceType) => null;
 }
