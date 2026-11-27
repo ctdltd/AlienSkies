@@ -9,7 +9,7 @@ namespace AlienSkies.Rendering;
 /// Shared by every host (Windows screen saver, Android screen saver, Android live wallpaper);
 /// each host just hands it an <see cref="SKCanvas"/>.
 /// </summary>
-public sealed class SkyRenderer : IDisposable
+public sealed partial class SkyRenderer : IDisposable
 {
     private static readonly SKColor NightSky = new(3, 4, 12);
     private static readonly SKColor DaySky = new(78, 120, 190);
@@ -26,6 +26,14 @@ public sealed class SkyRenderer : IDisposable
     /// <param name="density">Device pixels per logical pixel (1 on a typical desktop, ~3 on phones).</param>
     public void Draw(SKCanvas canvas, SKSizeI size, SkyScene scene, SaverSettings s,
                      double azimuthOffsetDeg = 0, float density = 1f)
+    {
+        if (scene.Flight is { } flight) DrawFlight(canvas, size, flight, s, azimuthOffsetDeg, density);
+        else DrawSurface(canvas, size, scene, s, azimuthOffsetDeg, density);
+    }
+
+    /// <summary>The view from a planet's surface (everything except flights).</summary>
+    private void DrawSurface(SKCanvas canvas, SKSizeI size, SkyScene scene, SaverSettings s,
+                             double azimuthOffsetDeg, float density)
     {
         double t = scene.TimeDays;
         var horizon = scene.Frame.Horizon(t);

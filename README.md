@@ -19,7 +19,7 @@ Move away from Earth and familiar constellations stretch and break apart. Our ow
 - **Day and night.** When the host star is up, the sky brightens and the stars wash out. Switch the atmosphere off for an airless world.
 - **Ground and horizon.** You're standing somewhere: pick your latitude, longitude and the direction you're facing.
 - **Multi-monitor panorama.** Each extra screen continues the view to the right instead of repeating it.
-- **Tour mode.** Hop to a random planet and a random spot on its surface at a fixed interval.
+- **Tour mode.** Visit a random planet and a random spot on its surface at a fixed interval. By default it flies there: the ground fades away, the view turns toward the destination star, and every star is re-projected from the moving viewpoint, so Earth's constellations stretch and reshape as you cross the gap before landing on the new world.
 - **Android too.** The same sky as an Android screen saver (while charging or docked) and as a live wallpaper, where swiping between home-screen pages pans across the horizon.
 
 ## Status
@@ -62,6 +62,8 @@ dotnet run --project tools/AlienSkies.Preview -- --planet "TRAPPIST-1 e" --lat 3
 ```
 
 Use `--star "Tau Ceti"` (and optionally `--name "My world"`) instead of `--planet` to stand on an imaginary planet around any catalog star. Other options are `--lon`, `--days`, `--alt`, `--fov`, `--width`, `--height` and `--density`.
+
+Add `--to "Proxima Cen b"` to render a tour flight from the planet to another one: `--progress 0.5` gives one frame (0 is lift-off, 1 is landing), and `--frames 12` writes a sequence `sky-00.png`, `sky-01.png`, and so on. `--warp false` turns off the near-light-speed look.
 
 Build the screen saver file:
 
@@ -169,6 +171,8 @@ Settings live in `%APPDATA%\AlienSkies\settings.json` on Windows (in the app's p
 | **Time** | Time scale, start time | 600× = one Earth day every 2.4 minutes |
 | **Tour** | Tour mode, interval | Random planet and random spot on its surface |
 | | Include imaginary planets | Lets the tour visit your imaginary planets too |
+| | Fly between stars, flight length | Fly to each new planet (30 s by default) instead of cutting to it |
+| | Near-light-speed look | While flying, stars crowd ahead and turn blue in front, red behind |
 
 ### Imaginary planets
 
@@ -223,7 +227,6 @@ Highlights, with the full list in [`docs/DESIGN.md`](docs/DESIGN.md):
 - Procedurally drawn *local* constellations, linking each system's own brightest stars
 - A Milky Way band, atmospheric dimming near the horizon, and sky colour from the host star's temperature
 - Proper motion: the sky from there, thousands of years ago or ahead
-- Cinematic flights between systems in tour mode
 - GPU rendering, and a macOS version
 
 ## Acknowledgements

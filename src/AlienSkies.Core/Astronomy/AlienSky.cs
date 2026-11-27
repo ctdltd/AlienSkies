@@ -66,8 +66,7 @@ public sealed class AlienSky
     public static AlienSky Build(ExoplanetSystem system, IEnumerable<Star> catalog, double limitingMagnitude = 6.5, bool includeSol = true)
     {
         var host = system.HostPosition;
-        // Anything this close to the host position is taken to be the host itself (catalog cross-match slop).
-        double selfRadius = System.Math.Max(0.02, system.DistanceParsecs * 0.005);
+        double selfRadius = SelfRadiusParsecs(system);
 
         var stars = new List<VisibleStar>();
         var near = new List<(Star Star, Vector3d Rel, double D)>();
@@ -121,6 +120,12 @@ public sealed class AlienSky
         }
         return companions;
     }
+
+    /// <summary>
+    /// Catalog stars this close to the host position are taken to be the host itself or its companions (catalog
+    /// cross-match slop), not background stars.
+    /// </summary>
+    public static double SelfRadiusParsecs(ExoplanetSystem system) => System.Math.Max(0.02, system.DistanceParsecs * 0.005);
 
     /// <summary>Apparent magnitude of the host star seen from the planet.</summary>
     public static double HostApparentMagnitude(ExoplanetSystem system, double distanceAu) =>

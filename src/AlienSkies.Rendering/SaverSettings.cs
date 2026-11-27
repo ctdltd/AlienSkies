@@ -138,7 +138,7 @@ public sealed class SaverSettings
 
     // ---- Tour --------------------------------------------------------------
     [Category("6. Tour"), DisplayName("Tour mode")]
-    [Description("Hop to a random catalog planet (and random latitude) at a fixed interval.")]
+    [Description("Visit a random planet (and random latitude) at a fixed interval.")]
     public bool TourMode { get; set; }
 
     [Category("6. Tour"), DisplayName("Include imaginary planets")]
@@ -147,6 +147,18 @@ public sealed class SaverSettings
 
     [Category("6. Tour"), DisplayName("Tour interval (minutes)")]
     public double TourIntervalMinutes { get; set; } = 5;
+
+    [Category("6. Tour"), DisplayName("Fly between stars")]
+    [Description("Travel to each new planet instead of cutting to it: lift off, fly through space while the stars and constellations shift around you, and land.")]
+    public bool TourFlights { get; set; } = true;
+
+    [Category("6. Tour"), DisplayName("Flight length (seconds)")]
+    [Description("How long each flight takes, lift-off to landing. The distance doesn't matter: a hop to the next star and a trip across the catalog take the same time.")]
+    public double FlightSeconds { get; set; } = 30;
+
+    [Category("6. Tour"), DisplayName("Near-light-speed look")]
+    [Description("While flying, crowd the stars toward the way you're heading and tint them blue ahead and red behind, as they would look close to the speed of light.")]
+    public bool FlightWarp { get; set; } = true;
 
     // ---- Persistence -------------------------------------------------------
     private static readonly JsonSerializerOptions Json = new()

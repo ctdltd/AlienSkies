@@ -12,6 +12,8 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <!-- Flight tests draw frames with the shared renderer; this gives SkiaSharp its native library on Linux CI. -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.157.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AlienSkies.Core\AlienSkies.Core.csproj" />
+    <ProjectReference Include="..\..\src\AlienSkies.Rendering\AlienSkies.Rendering.csproj" />
   </ItemGroup>
 
 </Project>
