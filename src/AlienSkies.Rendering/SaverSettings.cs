@@ -107,6 +107,10 @@ public sealed class SaverSettings
     [Category("4. View"), DisplayName("Star size scale")]
     public double StarScale { get; set; } = 1.0;
 
+    [Category("4. View"), DisplayName("Star colour boost")]
+    [Description("1 = true star colours (black-body, subtle: the Sun is nearly white). Higher values (up to 3) exaggerate the tints the way long-exposure photos do; 0 = white.")]
+    public double ColorBoost { get; set; } = 1.5;
+
     [Category("4. View"), DisplayName("Atmosphere / daylight")]
     [Description("Brighten the sky and wash out stars when the host star is up. Off = airless moon.")]
     public bool Atmosphere { get; set; } = true;

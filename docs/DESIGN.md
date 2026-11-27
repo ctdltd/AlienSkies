@@ -86,15 +86,17 @@ Reproduce with `--planet "Kepler-16 b" --days 10.775 --az 264 --alt 9 --fov 60` 
 ## Known simplifications (TODO)
 
 * Proper motion and radial velocity are not yet propagated. That matters for nearby systems and for a "simultaneous" sky.
-* Interstellar extinction is ignored, so distant stars look slightly too bright.
+* Interstellar extinction is ignored. Each star's absolute magnitude is taken from its dimmed apparent V, so it already carries the dust between Earth and the star. Stars seen from a host closer to them than we are therefore look slightly too faint, and no dust is added along the new line of sight. Inside about 100 pc (the Local Bubble) both effects are under 0.1 mag.
+* **The sky is incomplete for distant hosts.** Hipparcos only holds stars that are bright from Earth (complete to about V 8), so the host's own neighbours go missing. Re-viewing Hipparcos-based HYG data, the naked-eye count (V ≤ 6.5) is 8,589 from Earth, 8,496 from 48 pc, 6,585 from 178 pc (Kepler-186), 1,953 from 550 pc (Kepler-452) and none from a microlensing host several kpc away, where a real sky would hold thousands. Beyond about 300 pc most of the remaining stars also have parallaxes too noisy to place well. A deeper Gaia catalog (`--gaia-limit`) helps out to a few hundred pc.
 * Only α Cen AB has a measured binary orbit so far; other catalog companions circle face-on at their projected separation. Circumbinary systems are limited to those in `KnownBinaries` (Kepler-16, Kepler-47, TOI-1338); others in a full archive build are treated as single stars.
 * Binary and planet orbits are fixed Kepler ellipses. Real circumbinary planets precess and their orbits wobble with the pair, which this ignores.
 * The host star itself stays at the centre of an S-type planet's orbit: the planet's motion with its host around the binary barycentre doesn't change what it sees.
 * If the host itself is missing from the star catalog, its nearest companion is taken for the host.
 * Host luminosity comes from the archive's `sy_vmag`, which is the *system* magnitude and slightly too bright for multiples (except circumbinary hosts, where it is split between the two stars).
-* The B−V colour ramp is approximate. Gaia stars use a rough BP−RP → B−V stand-in.
+* Star colours are black-body sRGB colours (D65 white) at the temperature B−V implies, saturated 1.5× by default (the "Star colour boost" setting; 1 = true colour). B−V is a poor thermometer for the hottest stars, which saturate to the same pale blue anyway. Gaia stars get B−V from BP−RP through a curve calibrated, at catalog build time, on the Hipparcos stars that have both colours.
+* Hipparcos stars with no usable parallax take Gaia DR3's when it is significant; otherwise they are dropped. Gaia stars that are already in Hipparcos are skipped, so the two catalogs don't double up.
 * The SkiaSharp renderer draws on the CPU. It should handle tens of thousands of visible stars, but a GPU path (Skia's GL backend) is the next step if a full Gaia catalog is used.
-* Host-star colour isn't in the exoplanet archive, so it is estimated from absolute magnitude along the main sequence; giant hosts come out too blue.
+* Host-star colour isn't in the exoplanet archive. It comes from the catalog star at the host position when one matches the host's brightness within 1 mag; otherwise it is estimated from absolute magnitude along the main sequence, and giant hosts come out too blue.
 * Android: `WallpaperService.Engine` is a Java inner class, and the .NET for Android 10 wrapper generator emits an invalid constructor for C# subclasses of inner classes. The Engine therefore lives in a small Java shim (`src/AlienSkies.Android/Java/SkyWallpaperService.java`) that forwards callbacks to C#.
 
 ## Roadmap ideas

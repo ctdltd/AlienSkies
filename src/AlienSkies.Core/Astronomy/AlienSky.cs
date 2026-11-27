@@ -111,7 +111,24 @@ public sealed class AlienSky
 
     public double HostRadiusSolar => Circumbinary?.Primary.RadiusSolar ?? Planet.HostRadiusSolar ?? 1.0;
 
-    public double HostColorBV => Circumbinary?.Primary.ColorBV ?? Planet.HostColorBVOrEstimate;
+    /// <summary>
+    /// Host B−V: the circumbinary primary's, the planet definition's, else the measured colour of the catalog star at the
+    /// host position, else an estimate from the host's brightness (<see cref="ExoplanetSystem.HostColorBVOrEstimate"/>).
+    /// </summary>
+    public double HostColorBV => Circumbinary?.Primary.ColorBV ?? Planet.HostColorBV ?? CatalogHostColorBV ?? Planet.HostColorBVOrEstimate;
+
+    /// <summary>
+    /// Beyond this distance from Earth the sky is noticeably incomplete: the star catalog only holds stars that look
+    /// bright from Earth, so the host's own neighbourhood goes missing (about 3/4 of naked-eye stars remain at 180 pc,
+    /// under 1/4 at 550 pc). See DESIGN.md.
+    /// </summary>
+    public const double SparseBeyondParsecs = 150;
+
+    /// <summary>True when this sky is missing many of the stars a real observer there would see.</summary>
+    public bool IsSparse => Planet.DistanceParsecs > SparseBeyondParsecs;
+
+    /// <summary>B−V of the catalog star taken to be the host (the one nearest the host position), when there is one.</summary>
+    public double? CatalogHostColorBV { get; private init; }
 
     private readonly Vector3d _los, _north, _east;
 
@@ -238,7 +255,12 @@ public sealed class AlienSky
                    system.HostAbsoluteV - 2.5 * System.Math.Log10(cb.Secondary.LightFractionV), cb.Secondary.ColorBV,
                    scale: cb.Primary.MassSolar / cb.TotalMassSolar, radiusSolar: cb.Secondary.RadiusSolar)]
             : FindCompanions(system, near);
-        return new AlienSky(system, stars, companions, circumbinary);
+        return new AlienSky(system, stars, companions, circumbinary)
+        {
+            // Only trust the match when its brightness agrees with the archive's host (a giant 2 pc off isn't it).
+            CatalogHostColorBV = near.Where(n => System.Math.Abs(n.Star.AbsoluteMagnitude - system.HostAbsoluteV) < 1)
+                .OrderBy(n => n.D).Select(n => (double?)n.Star.ColorBV).FirstOrDefault(),
+        };
     }
 
     /// <summary>
