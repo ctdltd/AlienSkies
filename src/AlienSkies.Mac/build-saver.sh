@@ -41,8 +41,8 @@ for tool in dotnet clang lipo codesign; do
   command -v "$tool" >/dev/null || { echo "Missing $tool (install the .NET 10 SDK and Xcode Command Line Tools)." >&2; exit 1; }
 done
 
-version="$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' "$root/Directory.Build.props" | head -1)"
-version="${version:-0.0.0}"
+# Release number YYddd.hhmm (see Directory.Build.props); set ALIENSKIES_STAMP to pin it.
+version="${ALIENSKIES_STAMP:-$(date +%y%j.%H%M)}"
 min_macos="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$here/Saver/Info.plist")"
 
 rm -rf "$out"
@@ -55,7 +55,7 @@ for arch in $archs; do
   rid="osx-$arch"
   echo "==> dotnet publish ($rid)"
   dotnet publish "$here/AlienSkies.Mac.csproj" -c Release -r "$rid" -o "$out/publish-$arch" \
-    -p:DebugType=none -p:StripSymbols=true -nologo
+    -p:DebugType=none -p:StripSymbols=true "-p:AlienSkiesStamp=$version" -nologo
   dylibs+=("$out/publish-$arch/AlienSkiesCore.dylib")
   clang_archs+=(-arch "$([[ $arch == x64 ]] && echo x86_64 || echo arm64)")
 done

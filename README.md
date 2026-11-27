@@ -14,7 +14,7 @@ Move away from Earth and familiar constellations stretch and break apart. Our ow
 
 - **A real sky from another star.** Every catalog star is re-centred on the host star, with its direction and brightness recomputed for the new distance.
 - **Our Sun, labelled.** Sol is marked with its distance and apparent magnitude. The info line tells you where to look for it, by azimuth and altitude, and how many years ago the light you're seeing left it; when it is out of view, an arrow at the screen edge shows which way to turn.
-- **The Milky Way, from there.** The band of our galaxy, with its bulge, star clouds, dark Great Rift and the Magellanic Clouds. From any nearby star it looks almost exactly as it does from Earth; from distant systems it shifts by parallax.
+- **The Milky Way, from there.** The band of our galaxy, from any nearby star almost exactly as it looks from Earth; from distant systems it shifts by parallax. By default it is a soft, stepped tint that shows where the band lies and where it is brightest, which is cheap enough for phones. The detailed style adds the bulge's star clouds, the dark Great Rift and the Magellanic Clouds.
 - **Sibling planets.** The other planets of the same system wander across the sky as bright points. In TRAPPIST-1 they pass close enough to show a disc a little over half the size of our Moon, with its phase.
 - **Earth's constellations, distorted.** Optionally, the line figures of all 88 constellations are drawn so you can watch them warp with distance.
 - **A living planet.** It orbits its star on its real (Keplerian) orbit and spins on its axis. Tidally locked worlds even show the small wobble (libration) caused by an eccentric orbit.
@@ -129,6 +129,8 @@ To remove it: `adb uninstall com.certificationtoolanddie.alienskies`, or uninsta
   adb shell settings put secure screensaver_components com.certificationtoolanddie.alienskies/com.certificationtoolanddie.alienskies.AlienSkiesDream
   ```
 
+**Release numbers.** Release builds are numbered `YYddd.hhmm` from the local build time: the two-digit year, the day of the year, then the hour and minute (5:10 AM on 27 November 2026 is `26331.0510`). On Android that is the version name; the version code Google Play compares is the same digits without the dot (`263310510`). Pass `-p:AlienSkiesStamp=26331.0510` to pin the number, for example to give the Windows, Android and macOS builds of one release the same number. On macOS, set `ALIENSKIES_STAMP` for `build-saver.sh`.
+
 The release build is signed with the SDK's debug key, which is fine for sideloading. An APK built on a different machine has a different key, so Android refuses to install it over the old one; uninstall first. Publishing to Google Play needs your own signing key (`AndroidKeyStore` and the related MSBuild properties).
 
 ### macOS
@@ -198,6 +200,7 @@ Settings live in `%APPDATA%\AlienSkies\settings.json` on Windows (in the app's p
 | | Star colour boost | 1 = true black-body colours (subtle), 1.5 by default, up to 3 for a long-exposure look |
 | | Atmosphere / daylight, ground | |
 | | Milky Way, Milky Way brightness | 1 = a dark country sky, up to 3 for a long-exposure look |
+| | Milky Way style | Soft tint (default, fast) or detailed (dust lanes and star clouds; several times the drawing cost) |
 | | Sibling planets | The system's other planets as wandering points |
 | | Earth's constellations, star labels, mark our Sun, info overlay | |
 | **Time** | Time scale, start time | 600× = one Earth day every 2.4 minutes |

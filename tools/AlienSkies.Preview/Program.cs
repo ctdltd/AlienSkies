@@ -4,7 +4,8 @@ using SkiaSharp;
 
 // Usage: dotnet run --project tools/AlienSkies.Preview -- [--planet "TRAPPIST-1 e" | --star "Vega" [--name "Zorg"]] [--lat 30] [--lon 0]
 //        [--days 0 | --year 2035.5] [--az 180] [--alt 25] [--fov 100] [--width 1600] [--height 900] [--density 1] [--out sky.png]
-//        [--milkyway 1] [--milkyway-brightness 1] [--siblings 1] [--info 1] [--ground 1] [--constellations 1] [--limit 6.5] [--color-boost 1.5]
+//        [--milkyway 1] [--milkyway-brightness 1] [--milkyway-style tint|detailed] [--siblings 1] [--info 1] [--ground 1] [--constellations 1] [--limit 6.5] [--color-boost 1.5]
+//        [--bench 200] times frames instead of rendering one
 //        [--to "Proxima Cen b" [--progress 0.5 | --frames 12] [--warp true]]
 // --to renders a tour flight from the planet to another one: one frame at --progress (0 = lift-off, 1 = landing), or
 // --frames evenly spaced frames written as <out>-00.png, <out>-01.png, ...
@@ -28,6 +29,7 @@ var settings = new SaverSettings
     FieldOfViewDeg = D("fov", 100),
     ShowMilkyWay = D("milkyway", 1) != 0,
     MilkyWayBrightness = D("milkyway-brightness", 1),
+    MilkyWayStyle = Enum.Parse<MilkyWayStyle>(Get("milkyway-style", "Tint"), ignoreCase: true),
     ShowSiblingPlanets = D("siblings", 1) != 0,
     ShowInfo = D("info", 1) != 0,
     ShowGround = D("ground", 1) != 0,
@@ -81,6 +83,23 @@ if (opts.TryGetValue("to", out var destination))
             Render($"{stem}-{i:00}.png");
         }
     }
+}
+else if (opts.TryGetValue("bench", out var benchFrames))
+{
+    // --bench N: time N frames with the view slowly panning (as the saver does), report ms per frame.
+    int n = int.Parse(benchFrames, CultureInfo.InvariantCulture);
+    for (int i = 0; i < 5; i++) renderer.Draw(surface.Canvas, size, scene, settings, i * 0.01, (float)D("density", 1));
+    var times = new List<double>(n);
+    for (int i = 0; i < n; i++)
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        renderer.Draw(surface.Canvas, size, scene, settings, i * 0.01, (float)D("density", 1));
+        surface.Flush();
+        times.Add(sw.Elapsed.TotalMilliseconds);
+    }
+    times.Sort();
+    Console.WriteLine($"{n} frames {size.Width}x{size.Height}: p50 {times[n / 2]:0.0} ms, p90 {times[n * 9 / 10]:0.0} ms");
+    Render(outPath);
 }
 else
 {
