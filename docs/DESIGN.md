@@ -61,11 +61,13 @@ Reproduce with `dotnet run --project tools/AlienSkies.Preview -- --planet "alf C
 ## Known simplifications (TODO)
 
 * Proper motion and radial velocity are not yet propagated. That matters for nearby systems and for a "simultaneous" sky.
-* Interstellar extinction is ignored, so distant stars look slightly too bright.
+* Interstellar extinction is ignored. Each star's absolute magnitude is taken from its dimmed apparent V, so it already carries the dust between Earth and the star. Stars seen from a host closer to them than we are therefore look slightly too faint, and no dust is added along the new line of sight. Inside about 100 pc (the Local Bubble) both effects are under 0.1 mag.
+* **The sky is incomplete for distant hosts.** Hipparcos only holds stars that are bright from Earth (complete to about V 8), so the host's own neighbours go missing. Re-viewing Hipparcos-based HYG data, the naked-eye count (V ≤ 6.5) is 8,589 from Earth, 8,496 from 48 pc, 6,585 from 178 pc (Kepler-186), 1,953 from 550 pc (Kepler-452) and none from a microlensing host several kpc away, where a real sky would hold thousands. Beyond about 300 pc most of the remaining stars also have parallaxes too noisy to place well. A deeper Gaia catalog (`--gaia-limit`) helps out to a few hundred pc.
 * Companion stars are static: they sit at their catalog projected separation and do not follow their binary orbit (α Cen AB: 79.9 yr, 11–36 AU). Circumbinary planets (Kepler-16) would need the planet to orbit the barycentre instead of one star.
 * If the host itself is missing from the star catalog, its nearest companion is taken for the host.
 * Host luminosity comes from the archive's `sy_vmag`, which is the *system* magnitude and slightly too bright for multiples.
-* The B−V colour ramp is approximate. Gaia stars use a rough BP−RP → B−V stand-in.
+* The B−V colour ramp is approximate. Gaia stars get B−V from BP−RP through a curve calibrated, at catalog build time, on the Hipparcos stars that have both colours.
+* Hipparcos stars with no usable parallax take Gaia DR3's when it is significant; otherwise they are dropped. Gaia stars that are already in Hipparcos are skipped, so the two catalogs don't double up.
 * The SkiaSharp renderer draws on the CPU. It should handle tens of thousands of visible stars, but a GPU path (Skia's GL backend) is the next step if a full Gaia catalog is used.
 * Host-star colour isn't in the exoplanet archive, so it is estimated from absolute magnitude along the main sequence; giant hosts come out too blue.
 * Android: `WallpaperService.Engine` is a Java inner class, and the .NET for Android 10 wrapper generator emits an invalid constructor for C# subclasses of inner classes. The Engine therefore lives in a small Java shim (`src/AlienSkies.Android/Java/SkyWallpaperService.java`) that forwards callbacks to C#.
