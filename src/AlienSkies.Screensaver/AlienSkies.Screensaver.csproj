@@ -11,6 +11,12 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
   </PropertyGroup>
 
+  <!-- The full catalogs bundled into the Android APK (tools/build_catalog.py output), embedded here too so the
+       single-file .scr shows the whole sky. Without them it falls back to the small samples in AlienSkies.Core. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\AlienSkies.Android\Assets\data\*.csv" LogicalName="AlienSkies.Full.%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\AlienSkies.Core\AlienSkies.Core.csproj" />
     <ProjectReference Include="..\AlienSkies.Rendering\AlienSkies.Rendering.csproj" />

@@ -1,3 +1,4 @@
+using AlienSkies.Core.Catalog;
 using AlienSkies.Rendering;
 using AlienSkies.Screensaver.Settings;
 
@@ -20,6 +21,11 @@ internal static class Program
         Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
+
+        // Search order on Windows: %APPDATA%\AlienSkies\data, <exe dir>\data, the full catalogs embedded in the .scr,
+        // then the samples embedded in AlienSkies.Core.
+        CatalogLoader.PlatformSource = fileName =>
+            typeof(Program).Assembly.GetManifestResourceStream("AlienSkies.Full." + fileName);
 
         var (mode, handle) = ParseArgs(args);
         var settings = SaverSettings.Load();
