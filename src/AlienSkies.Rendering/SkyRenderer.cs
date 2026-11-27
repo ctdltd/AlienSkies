@@ -38,18 +38,12 @@ public sealed partial class SkyRenderer : IDisposable
         double t = scene.TimeDays;
         var horizon = scene.Frame.Horizon(t);
         var planetOffset = scene.Frame.PlanetOffsetAu(t);
-        var (hostDir, hostDistAu) = scene.Frame.HostStarFromPlanet(t);
-        var hostColor = HostStarColor(scene.Sky.Planet);
-        var host = new Sun(scene.Sky.Planet.HostName, horizon.ToLocal(hostDir), hostDistAu,
-            AlienSky.HostApparentMagnitude(scene.Sky.Planet, hostDistAu),
-            AlienSky.HostAngularRadius(scene.Sky.Planet, hostDistAu), hostColor);
-
-        var suns = new List<Sun> { host };
-        foreach (var c in scene.Sky.Companions)
-        {
-            var (dir, dist) = c.FromPlanet(planetOffset);
-            suns.Add(new Sun(c.Name ?? c.Id, horizon.ToLocal(dir), dist, c.ApparentMagnitude(dist), c.AngularRadius(dist), BvToColor(c.ColorBV)));
-        }
+        // Host first, then companions: a second star in a wide binary, or the partner in a circumbinary pair.
+        var suns = scene.Sky.SunsFromPlanet(planetOffset, t)
+            .Select(v => new Sun(v.Name, horizon.ToLocal(v.Direction), v.DistanceAu, v.ApparentMagnitude, v.AngularRadius,
+                                 BvToColor(v.ColorBV), v.VisibleFraction))
+            .ToList();
+        var hostColor = suns[0].Color;
 
         // Daylight: 0 at astronomical twilight (-18°), full once a sun is 6° up, scaled by how bright
         // it looks. Our Sun (mag -26.7) gives full daylight; a dim red dwarf seen from a close orbit
@@ -72,7 +66,13 @@ public sealed partial class SkyRenderer : IDisposable
 
         if (s.ShowConstellations) DrawConstellations(canvas, scene, horizon, cam, s, day, density);
         DrawStars(canvas, scene, horizon, cam, s, limit, density);
-        for (int i = suns.Count - 1; i >= 0; i--) DrawSun(canvas, suns[i], cam, density); // host on top
+        // Nearer suns pass in front. One crossing a hotter star's face shows as a dark disc against it.
+        double brightestSurface = suns.Max(x => x.SurfaceBrightness);
+        foreach (var sun in suns.OrderByDescending(x => x.DistanceAu))
+        {
+            bool inTransit = suns.Any(o => o.DistanceAu > sun.DistanceAu && o.VisibleFraction < 1);
+            DrawSun(canvas, sun, cam, density, inTransit ? sun.SurfaceBrightness / brightestSurface : 1);
+        }
         if (s.ShowGround) DrawGround(canvas, cam, size, day);
         if (s.ShowInfo) DrawInfo(canvas, size, scene, horizon, suns, s.MarkSol, density);
     }
@@ -133,7 +133,9 @@ public sealed partial class SkyRenderer : IDisposable
         }
     }
 
-    private void DrawSun(SKCanvas canvas, Sun sun, Camera cam, float density)
+    /// <param name="relativeSurface">Surface brightness against the brightest sun's, for a sun crossing another's face,
+    /// so a cool red dwarf in front of a hotter star shows dark. 1 otherwise.</param>
+    private void DrawSun(SKCanvas canvas, Sun sun, Camera cam, float density, double relativeSurface = 1)
     {
         if (cam.Project(sun.Local) is not SKPoint p) return;
         float r = (float)Math.Max(3 * density, sun.AngularRadius * cam.Focal);
@@ -144,7 +146,8 @@ public sealed partial class SkyRenderer : IDisposable
         using (var glowPaint = new SKPaint { IsAntialias = true, Shader = glow })
             canvas.DrawCircle(p, glowR, glowPaint);
 
-        _fill.Color = Lerp(sun.Color, SKColors.White, 0.4); // the disc itself reads paler than its glow
+        var disc = Lerp(sun.Color, SKColors.White, 0.4); // the disc itself reads paler than its glow
+        _fill.Color = Lerp(SKColors.Black, disc, Math.Clamp(Math.Pow(relativeSurface, 0.3), 0.3, 1));
         canvas.DrawCircle(p, r, _fill);
     }
 
@@ -178,7 +181,7 @@ public sealed partial class SkyRenderer : IDisposable
         {
             $"The sky from {(p.IsImaginary && !p.PlanetName.Contains("imaginary", StringComparison.OrdinalIgnoreCase) ? "imaginary " : "")}{p.PlanetName}  ·  orbiting {p.HostName}, {scene.DistanceFromEarthLy:0.#} ly from Earth",
             $"Lat {c.LatitudeDeg:0.#}°  Lon {c.LongitudeDeg:0.#}°  ·  orbit {c.SemiMajorAxisAu:0.###} AU / {c.OrbitalPeriodDays:0.##} d  ·  {spin}  ·  " +
-            $"{p.HostName} at {suns[0].Altitude / Units.Deg:0}° altitude, mag {suns[0].Magnitude:0.0}",
+            $"{suns[0].Name} at {suns[0].Altitude / Units.Deg:0}° altitude, mag {suns[0].Magnitude:0.0}",
         };
         foreach (var sun in suns.Skip(1))
             lines.Add($"Second sun {sun.Name}: {sun.Altitude / Units.Deg:0}° altitude, mag {sun.Magnitude:0.0}, {sun.DistanceAu:0.#} AU away");
@@ -209,8 +212,13 @@ public sealed partial class SkyRenderer : IDisposable
     // ---- helpers -----------------------------------------------------------
 
     /// <summary>A star close enough to show a disc and light the sky: the host, or a companion in a multiple system.</summary>
-    private readonly record struct Sun(string Name, Vector3d Local, double DistanceAu, double Magnitude, double AngularRadius, SKColor Color)
+    private readonly record struct Sun(string Name, Vector3d Local, double DistanceAu, double Magnitude, double AngularRadius,
+                                       SKColor Color, double VisibleFraction = 1)
     {
+        /// <summary>Light per unit of disc area, eclipse aside (it depends only on the star's temperature).</summary>
+        public double SurfaceBrightness =>
+            Math.Pow(10, -0.4 * Magnitude) / Math.Max(VisibleFraction, 1e-4) / (AngularRadius * AngularRadius);
+
         public double Altitude => Math.Asin(Math.Clamp(Local.Z, -1, 1));
 
         /// <summary>0 for a star too faint to light the sky (mag -12), 1 for full daylight (mag -26).</summary>
@@ -231,15 +239,6 @@ public sealed partial class SkyRenderer : IDisposable
         static byte B(double v) => (byte)Math.Clamp(v * 255, 0, 255);
         return new SKColor(B(r), B(g), B(b));
     }
-
-    /// <summary>
-    /// Uses the host's catalog B−V when known (imaginary planets around catalog stars). The exoplanet archive has
-    /// no host colour, so otherwise estimate B−V from absolute magnitude along the main sequence
-    /// (Sun: M 4.8 → 0.65; red dwarfs like TRAPPIST-1: M ≈ 18 → very red). Giants will come out too blue.
-    /// </summary>
-    private static SKColor HostStarColor(Core.Catalog.ExoplanetSystem planet) =>
-        BvToColor(planet.HostColorBV
-            ?? Math.Clamp(0.65 + 0.11 * (planet.HostAbsoluteV - Units.SunAbsoluteV), -0.3, 2.0));
 
     private static double SmoothStep(double e0, double e1, double x)
     {

@@ -16,6 +16,7 @@ Move away from Earth and familiar constellations stretch and break apart. Our ow
 - **Our Sun, labelled.** Sol is marked with its distance and apparent magnitude. The info line tells you where to look for it, by azimuth and altitude, even when it is off-screen or below the horizon, and how many years ago the light you're seeing left it.
 - **Earth's constellations, distorted.** Optionally, the line figures of all 88 constellations are drawn so you can watch them warp with distance.
 - **A living planet.** It orbits its star on its real (Keplerian) orbit and spins on its axis. Tidally locked worlds even show the small wobble (libration) caused by an eccentric orbit.
+- **Two suns.** In a binary system the second star is a second sun that follows its real orbit: from a planet of α Cen A, Toliman swings from 36 AU out to 11 AU in 2035 over its 80-year orbit. Circumbinary worlds such as Kepler-16 b orbit both stars at once, see double sunsets every few weeks, and watch the suns eclipse each other.
 - **Day and night.** When the host star is up, the sky brightens and the stars wash out. Switch the atmosphere off for an airless world.
 - **Ground and horizon.** You're standing somewhere: pick your latitude, longitude and the direction you're facing.
 - **Multi-monitor panorama.** Each extra screen continues the view to the right instead of repeating it.

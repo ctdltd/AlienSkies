@@ -41,15 +41,19 @@ public sealed class FlightSky
     public int FromHostIndex { get; }
     public int ToHostIndex { get; }
 
-    public FlightSky(IEnumerable<Star> catalog, ExoplanetSystem from, IReadOnlyList<CompanionStar> fromCompanions,
-                     ExoplanetSystem to, IReadOnlyList<CompanionStar> toCompanions)
-    {
-        var a = from.HostPosition;
-        var b = to.HostPosition;
-        double ra = AlienSky.SelfRadiusParsecs(from), rb = AlienSky.SelfRadiusParsecs(to);
+    private readonly AlienSky _from, _to;
+    private readonly int _fromCount, _toCount; // host plus companions
 
-        // Catalog entries for the two hosts and their companions are replaced by the systems' own descriptions, exactly
-        // as AlienSky.Build does, so both ends agree with the planet view.
+    public FlightSky(IEnumerable<Star> catalog, AlienSky from, AlienSky to)
+    {
+        _from = from;
+        _to = to;
+        var a = from.Planet.HostPosition;
+        var b = to.Planet.HostPosition;
+        double ra = AlienSky.SelfRadiusParsecs(from.Planet), rb = AlienSky.SelfRadiusParsecs(to.Planet);
+
+        // Catalog entries for the two hosts and their companions are replaced by the systems' own suns, exactly as
+        // AlienSky.Build does, so both ends agree with the planet view.
         var stars = new List<FlightStar>();
         foreach (var s in catalog)
         {
@@ -59,40 +63,55 @@ public sealed class FlightSky
         stars.Add(new FlightStar(AlienSky.SolId, "Sun (Sol)", Vector3d.Zero, Units.SunAbsoluteV, 0.65));
 
         FromHostIndex = stars.Count;
-        stars.Add(Host(from));
-        AddCompanions(stars, a, fromCompanions);
-        if (SameSystem(from, to))
+        AddSystem(stars, from);
+        _fromCount = stars.Count - FromHostIndex;
+        if ((a - b).Length < 1e-9)
         {
             ToHostIndex = FromHostIndex;
         }
         else
         {
             ToHostIndex = stars.Count;
-            stars.Add(Host(to));
-            AddCompanions(stars, b, toCompanions);
+            AddSystem(stars, to);
+            _toCount = stars.Count - ToHostIndex;
         }
 
         _stars = [.. stars];
         _seen = new SeenStar[_stars.Length];
         _index = new Dictionary<string, int>(_stars.Length);
         for (int i = 0; i < _stars.Length; i++) _index.TryAdd(_stars[i].Id, i);
+        MoveSuns(0, 0);
     }
 
-    private static bool SameSystem(ExoplanetSystem from, ExoplanetSystem to) =>
-        (from.HostPosition - to.HostPosition).Length < 1e-9;
-
-    private static FlightStar Host(ExoplanetSystem p) =>
-        new("host:" + p.HostName, p.HostName, p.HostPosition, p.HostAbsoluteV, HostColorBV(p));
-
-    private static void AddCompanions(List<FlightStar> stars, Vector3d host, IReadOnlyList<CompanionStar> companions)
+    /// <summary>The host first, then its companions; their positions are filled in by <see cref="MoveSuns"/>.</summary>
+    private static void AddSystem(List<FlightStar> stars, AlienSky sky)
     {
-        foreach (var c in companions)
-            stars.Add(new FlightStar(c.Id, c.Name, host + c.OffsetAu * Units.ParsecsPerAu, c.AbsoluteMagnitude, c.ColorBV));
+        var at = sky.Planet.HostPosition;
+        stars.Add(new FlightStar("host:" + sky.Planet.HostName, sky.HostName, at, sky.HostAbsoluteV, sky.HostColorBV));
+        foreach (var c in sky.Companions) stars.Add(new FlightStar(c.Id, c.Name, at, c.AbsoluteMagnitude, c.ColorBV));
     }
 
-    /// <summary>The catalog colour when known, otherwise the same main-sequence estimate the renderer uses for host discs.</summary>
-    public static double HostColorBV(ExoplanetSystem p) =>
-        p.HostColorBV ?? System.Math.Clamp(0.65 + 0.11 * (p.HostAbsoluteV - Units.SunAbsoluteV), -0.3, 2.0);
+    /// <summary>
+    /// Puts each system's suns where their binary orbits have them at that system's time (days since J2000.0, as in
+    /// <see cref="AlienSky.SunsFromPlanet"/>). Call before <see cref="Observe"/> when the clock runs.
+    /// </summary>
+    public void MoveSuns(double fromTimeDays, double toTimeDays)
+    {
+        Place(_from, FromHostIndex, _fromCount, fromTimeDays);
+        if (ToHostIndex != FromHostIndex) Place(_to, ToHostIndex, _toCount, toTimeDays);
+    }
+
+    private void Place(AlienSky sky, int first, int count, double t)
+    {
+        if (count == 0) return;
+        var centre = sky.Planet.HostPosition; // centre of the planet's orbit
+        _stars[first] = _stars[first] with { PositionParsecs = centre + sky.HostOffsetAu(t) * Units.ParsecsPerAu };
+        for (int i = 1; i < count; i++)
+        {
+            var c = sky.Companions[i - 1];
+            _stars[first + i] = _stars[first + i] with { PositionParsecs = centre + c.OffsetAu(t) * Units.ParsecsPerAu };
+        }
+    }
 
     /// <summary>Position in <see cref="Stars"/> of a star by id (catalog id, <see cref="AlienSky.SolId"/>, ...), or -1.</summary>
     public int IndexOf(string id) => _index.TryGetValue(id, out int i) ? i : -1;

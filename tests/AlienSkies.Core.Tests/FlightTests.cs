@@ -95,7 +95,7 @@ public class FlightSkyTests
     {
         var a = AlienSky.Build(Planet(from), Catalog);
         var b = AlienSky.Build(Planet(to), Catalog);
-        return (new FlightSky(Catalog, a.Planet, a.Companions, b.Planet, b.Companions), a, b);
+        return (new FlightSky(Catalog, a, b), a, b);
     }
 
     [Theory]
@@ -129,6 +129,24 @@ public class FlightSkyTests
             Assert.True(Vector3d.Dot(seen[i].Direction, star.Direction) > 1 - 1e-12, star.Id);
             Assert.Equal(star.ApparentMagnitude, seen[i].ApparentMagnitude, 9);
         }
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(9000)]
+    public void SecondSunsFollowTheirOrbits_AndMatchTheSurfaceView(double tDays)
+    {
+        // Toliman moves on its 80-year orbit; at lift-off the flight must show it where the surface view does.
+        var (sky, a, _) = Build("alf Cen A (hypothetical Earth)", "TRAPPIST-1 e");
+        var planetOffsetAu = new Vector3d(0.7, -0.5, 0.2);
+        sky.MoveSuns(tDays, tDays);
+        var seen = sky.Observe(FlightPath.PlanetPosition(a.Planet.HostPosition, planetOffsetAu), Vector3d.UnitX);
+        var suns = a.SunsFromPlanet(planetOffsetAu, tDays);
+        var toliman = suns.Single(x => x.Name == "Toliman");
+        int i = sky.IndexOf(a.Companions.Single().Id);
+        Assert.True(Vector3d.Dot(seen[i].Direction, toliman.Direction) > 1 - 1e-9);
+        Assert.True(Vector3d.Dot(seen[sky.FromHostIndex].Direction, suns[0].Direction) > 1 - 1e-9);
+        Assert.Equal(toliman.DistanceAu * Units.ParsecsPerAu, seen[i].DistanceParsecs, 12);
     }
 
     [Fact]

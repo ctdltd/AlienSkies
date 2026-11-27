@@ -58,7 +58,10 @@ public sealed class SkyScene
         return planet is null ? null : CatalogConfig(planet, lat, lon);
     }
 
-    /// <summary>Simulated time in days since the orbit epoch.</summary>
+    /// <summary>
+    /// Simulated time in days. Day 0 is J2000.0 for binary orbits (where α Cen B is, which way Kepler-16's
+    /// stars are turning); planets' own orbits just start at periapsis then.
+    /// </summary>
     public double TimeDays => _epochDays + _clock.Elapsed.TotalSeconds * _settings.TimeScale / 86_400.0;
 
     /// <summary>Call once per frame; handles tour hops and flights.</summary>
@@ -128,7 +131,7 @@ public sealed class SkyScene
         double a = s.UseCatalogOrbit ? catalog.SemiMajorAxisAu : s.OrbitalRadiusAu;
         double period = s.UseCatalogOrbit ? catalog.OrbitalPeriodDays
             : s.OrbitalPeriodDays > 0 ? s.OrbitalPeriodDays
-            : PlanetConfig.KeplerPeriodDays(a, planet.HostMassSolar ?? 1.0);
+            : PlanetConfig.KeplerPeriodDays(a, planet.CentralMassSolar);
 
         bool locked = s.RotationMode switch
         {

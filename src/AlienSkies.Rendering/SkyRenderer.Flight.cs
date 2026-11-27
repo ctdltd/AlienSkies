@@ -24,6 +24,7 @@ public sealed partial class SkyRenderer
         var cruiseView = FlightOrientation.Cruise(path.Heading, azimuthOffsetDeg * Units.Deg);
         var view = FlightOrientation.Blend(planetView, cruiseView, FlightTimeline.HeadingBlend(u));
         var cam = new Camera(size, 0, 0, s.FieldOfViewDeg); // looks along view.North
+        flight.Sky.MoveSuns(flight.From.TimeDays, flight.To.TimeDays);
         var seen = flight.Sky.Observe(flight.Position, path.Heading, flight.Beta(s.FlightWarp));
         double limit = s.LimitingMagnitude;
         double space = 1 - FlightTimeline.SurfaceOpacity(u);

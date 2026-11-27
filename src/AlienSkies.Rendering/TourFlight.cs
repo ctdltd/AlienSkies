@@ -35,7 +35,7 @@ public sealed class TourFlight
     {
         From = from;
         To = to;
-        Sky = new FlightSky(catalog, from.Sky.Planet, from.Sky.Companions, to.Sky.Planet, to.Sky.Companions);
+        Sky = new FlightSky(catalog, from.Sky, to.Sky);
         StartedAt = startedAt;
         DurationSeconds = Math.Max(1, durationSeconds);
 
