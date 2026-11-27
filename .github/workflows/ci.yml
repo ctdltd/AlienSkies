@@ -65,6 +65,8 @@ jobs:
           render --planet "alf Cen A (hypothetical Earth)" --days 100 --width 1280 --height 720 --out previews/alf-cen-a.png
           render --planet "Kepler-16 b" --days 10.775 --az 264 --alt 9 --fov 60 --width 1280 --height 720 --out previews/kepler-16b-double-sunset.png
           render --star "Tau Ceti" --name "Imaginary Tau Ceti world" --width 1280 --height 720 --out previews/imaginary-tau-ceti.png
+          # A tour flight, lift-off to landing, as a numbered frame sequence (flight-alf-cen-to-trappist-00.png ...).
+          render --planet "alf Cen A (hypothetical Earth)" --to "TRAPPIST-1 e" --frames 9 --width 1280 --height 720 --out previews/flight-alf-cen-to-trappist.png
           for f in previews/*.png; do
             test -s "$f" || { echo "::error::$f is empty"; exit 1; }
           done
