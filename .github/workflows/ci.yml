@@ -3,6 +3,7 @@ name: CI
 # Builds everything except the Android app (which needs the .NET android
 # workload), runs the unit tests, and renders a few preview frames.
 # AlienSkies.CI.slnf is the solution minus AlienSkies.Android.
+# The macos-saver job builds the macOS screen saver bundle on a Mac runner.
 
 on:
   push:
@@ -62,7 +63,13 @@ jobs:
           render --planet "Proxima Cen b" --lat -30 --az 0 --width 1280 --height 720 --out previews/proxima-cen-b.png
           render --planet "eps Eri b" --alt 60 --fov 120 --width 1280 --height 720 --out previews/eps-eri-b.png
           render --planet "alf Cen A (hypothetical Earth)" --days 100 --width 1280 --height 720 --out previews/alf-cen-a.png
+          render --planet "TRAPPIST-1 e" --lon 110 --lat 0 --days 1.5 --az 270 --alt 20 --width 1280 --height 720 --out previews/trappist-1e-siblings.png
+          render --planet "TRAPPIST-1 e" --lon 110 --lat 0 --days 1.5 --az 270 --alt 26 --fov 12 --width 1280 --height 720 --out previews/trappist-1d-crescent.png
+          render --planet "Proxima Cen b" --lat -30 --lon 180 --az 200 --alt 35 --width 1280 --height 720 --out previews/proxima-milky-way.png
+          render --planet "Kepler-16 b" --days 10.775 --az 264 --alt 9 --fov 60 --width 1280 --height 720 --out previews/kepler-16b-double-sunset.png
           render --star "Tau Ceti" --name "Imaginary Tau Ceti world" --width 1280 --height 720 --out previews/imaginary-tau-ceti.png
+          # A tour flight, lift-off to landing, as a numbered frame sequence (flight-alf-cen-to-trappist-00.png ...).
+          render --planet "alf Cen A (hypothetical Earth)" --to "TRAPPIST-1 e" --frames 9 --width 1280 --height 720 --out previews/flight-alf-cen-to-trappist.png
           for f in previews/*.png; do
             test -s "$f" || { echo "::error::$f is empty"; exit 1; }
           done
@@ -72,6 +79,30 @@ jobs:
         with:
           name: preview-frames
           path: previews/*.png
+          if-no-files-found: error
+
+  macos-saver:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Universal (Apple silicon + Intel) bundle, ad-hoc signed; the smoke test loads the
+      # library the way the screen saver does and renders frames for two screens.
+      - name: Build Alien Skies.saver
+        run: src/AlienSkies.Mac/build-saver.sh --smoke
+
+      - name: Upload screen saver
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlienSkies-macOS
+          path: |
+            artifacts/mac/AlienSkies-macOS.zip
+            artifacts/mac/smoke-frame.ppm
           if-no-files-found: error
 
   catalog-tools:

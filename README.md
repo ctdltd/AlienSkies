@@ -13,23 +13,27 @@ Move away from Earth and familiar constellations stretch and break apart. Our ow
 ## What you see
 
 - **A real sky from another star.** Every catalog star is re-centred on the host star, with its direction and brightness recomputed for the new distance.
-- **Our Sun, labelled.** Sol is marked with its distance and apparent magnitude. The info line tells you where to look for it, by azimuth and altitude, even when it is off-screen or below the horizon, and how many years ago the light you're seeing left it.
+- **Our Sun, labelled.** Sol is marked with its distance and apparent magnitude. The info line tells you where to look for it, by azimuth and altitude, and how many years ago the light you're seeing left it; when it is out of view, an arrow at the screen edge shows which way to turn.
+- **The Milky Way, from there.** The band of our galaxy, with its bulge, star clouds, dark Great Rift and the Magellanic Clouds. From any nearby star it looks almost exactly as it does from Earth; from distant systems it shifts by parallax.
+- **Sibling planets.** The other planets of the same system wander across the sky as bright points. In TRAPPIST-1 they pass close enough to show a disc a little over half the size of our Moon, with its phase.
 - **Earth's constellations, distorted.** Optionally, the line figures of all 88 constellations are drawn so you can watch them warp with distance.
 - **A living planet.** It orbits its star on its real (Keplerian) orbit and spins on its axis. Tidally locked worlds even show the small wobble (libration) caused by an eccentric orbit.
+- **Two suns.** In a binary system the second star is a second sun that follows its real orbit: from a planet of α Cen A, Toliman swings from 36 AU out to 11 AU in 2035 over its 80-year orbit. Circumbinary worlds such as Kepler-16 b orbit both stars at once, see double sunsets every few weeks, and watch the suns eclipse each other.
 - **Day and night.** When the host star is up, the sky brightens and the stars wash out. Switch the atmosphere off for an airless world.
 - **Ground and horizon.** You're standing somewhere: pick your latitude, longitude and the direction you're facing.
 - **Multi-monitor panorama.** Each extra screen continues the view to the right instead of repeating it.
-- **Tour mode.** Hop to a random planet and a random spot on its surface at a fixed interval.
+- **Tour mode.** Visit a random planet and a random spot on its surface at a fixed interval. By default it flies there: the ground fades away, the view turns toward the destination star, and every star is re-projected from the moving viewpoint, so Earth's constellations stretch and reshape as you cross the gap before landing on the new world.
 - **Android too.** The same sky as an Android screen saver (while charging or docked) and as a live wallpaper, where swiping between home-screen pages pans across the horizon.
 
 ## Status
 
-Early development. The astronomy core is unit-tested. All hosts draw with one shared SkiaSharp renderer, and `tools/AlienSkies.Preview` renders frames to PNG so drawing changes can be checked on any OS. The Windows saver and the Android app both build cleanly; the Android screen saver and live wallpaper have not yet been tested on a device. The repository embeds a small sample catalog so it runs out of the box. See [Star and planet data](#star-and-planet-data) to install the full catalogs.
+Early development. The astronomy core is unit-tested. All hosts draw with one shared SkiaSharp renderer, and `tools/AlienSkies.Preview` renders frames to PNG so drawing changes can be checked on any OS. The Windows saver and the Android app both build cleanly, and CI builds the macOS screen saver; the Android screen saver and live wallpaper have not yet been tested on a device. The repository embeds a small sample catalog so it runs out of the box. See [Star and planet data](#star-and-planet-data) to install the full catalogs.
 
 ## Requirements
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) to build
 - **Windows saver:** Windows 10 or 11, x64. A framework-dependent build needs the .NET 10 Desktop Runtime; a self-contained build needs nothing extra.
+- **macOS:** to build, a Mac with the .NET 10 SDK and Xcode (or just its Command Line Tools); see [macOS](#macos). The screen saver runs on Apple silicon and Intel Macs.
 - **Android:** to build, the .NET `android` workload, a JDK (17 or later) and the Android SDK (see [Android](#android)); Android 8.0 (API 26) or later to run. The Android app builds on Windows, macOS or Linux.
 - Optional, for the full catalogs: Python 3 (WSL works well) with `pyvo`
 
@@ -62,6 +66,8 @@ dotnet run --project tools/AlienSkies.Preview -- --planet "TRAPPIST-1 e" --lat 3
 ```
 
 Use `--star "Tau Ceti"` (and optionally `--name "My world"`) instead of `--planet` to stand on an imaginary planet around any catalog star. Other options are `--lon`, `--days`, `--alt`, `--fov`, `--width`, `--height` and `--density`.
+
+Add `--to "Proxima Cen b"` to render a tour flight from the planet to another one: `--progress 0.5` gives one frame (0 is lift-off, 1 is landing), and `--frames 12` writes a sequence `sky-00.png`, `sky-01.png`, and so on. `--warp false` turns off the near-light-speed look.
 
 Build the screen saver file:
 
@@ -125,6 +131,31 @@ To remove it: `adb uninstall com.certificationtoolanddie.alienskies`, or uninsta
 
 The release build is signed with the SDK's debug key, which is fine for sideloading. An APK built on a different machine has a different key, so Android refuses to install it over the old one; uninstall first. Publishing to Google Play needs your own signing key (`AndroidKeyStore` and the related MSBuild properties).
 
+### macOS
+
+The macOS version is a real screen saver bundle, `Alien Skies.saver`, that appears in System Settings > Screen Saver next to Apple's own. It must be built on a Mac:
+
+```bash
+src/AlienSkies.Mac/build-saver.sh --install       # build, then copy to ~/Library/Screen Savers
+src/AlienSkies.Mac/build-saver.sh --data data-out # also bundle the full catalogs
+```
+
+The result is `artifacts/mac/Alien Skies.saver` (and a zip of it), one universal bundle for Apple silicon and Intel. Double-clicking the `.saver` also offers to install it. CI builds the same bundle on a macOS runner, and you can download it from the run's `AlienSkies-macOS` artifact.
+
+**How it's built.** Apple loads screen savers as Objective-C plug-ins into its own process, so the bundle has two parts. `Saver/AlienSkiesView.m` is a small `ScreenSaverView`. The shared C# scene, settings and SkiaSharp renderer are compiled ahead of time with NativeAOT into `AlienSkiesCore.dylib`, which needs no .NET runtime on the user's Mac. Each frame the view asks the library to draw into a pixel buffer and puts it on screen. The Options button shows a sheet generated from the same settings model as the Windows dialog and the Android screen, so a new setting appears on all three without Mac-specific work. Imaginary planets are edited in the settings file for now (the sheet has an Open Settings File button).
+
+**Settings and catalogs.** Since macOS 14, screen savers run sandboxed inside Apple's `legacyScreenSaver` process, so `settings.json` lives in that process's container, in `~/Library/Containers/com.apple.ScreenSaver.Engine.legacyScreenSaver/Data/Library/Application Support/AlienSkies/`. Full catalogs go in a `data` folder next to it, or are bundled with `--data`.
+
+**Signing and sharing.** Without a certificate the script ad-hoc signs the bundle. That works on the Mac that built it. Copies downloaded on another Mac, including the CI artifact, are blocked by Gatekeeper until you allow them in System Settings > Privacy & Security, or remove the quarantine flag with `xattr -dr com.apple.quarantine "Alien Skies.saver"`. To share it properly, sign with a Developer ID Application certificate (Apple Developer Program, $99 a year) and notarize it:
+
+```bash
+xcrun notarytool store-credentials alienskies   # once: Apple ID, team ID, app-specific password
+SIGN_IDENTITY="Developer ID Application: Certification Tool and Die, Ltd. (TEAMID)" \
+NOTARY_PROFILE=alienskies src/AlienSkies.Mac/build-saver.sh
+```
+
+Screen savers can't be sold through the Mac App Store, so a notarized zip on a website is the usual way to distribute one.
+
 ### Command-line switches (Windows)
 
 | Switch | Meaning |
@@ -165,10 +196,14 @@ Settings live in `%APPDATA%\AlienSkies\settings.json` on Windows (in the app's p
 | | Pan across monitors | Continuous panorama on multiple screens |
 | | Limiting magnitude, star size | 6.5 ≈ a dark sky to the naked eye |
 | | Atmosphere / daylight, ground | |
+| | Milky Way, Milky Way brightness | 1 = a dark country sky, up to 3 for a long-exposure look |
+| | Sibling planets | The system's other planets as wandering points |
 | | Earth's constellations, star labels, mark our Sun, info overlay | |
 | **Time** | Time scale, start time | 600× = one Earth day every 2.4 minutes |
 | **Tour** | Tour mode, interval | Random planet and random spot on its surface |
 | | Include imaginary planets | Lets the tour visit your imaginary planets too |
+| | Fly between stars, flight length | Fly to each new planet (30 s by default) instead of cutting to it |
+| | Near-light-speed look | While flying, stars crowd ahead and turn blue in front, red behind |
 
 ### Imaginary planets
 
@@ -207,6 +242,7 @@ For Android, copy the CSVs into `src/AlienSkies.Android/Assets/data/` before bui
 src/AlienSkies.Core/          UI-free astronomy: coordinates, catalogs, orbit and spin, sky re-projection
 src/AlienSkies.Rendering/     Shared scene, settings and SkiaSharp renderer used by every host
 src/AlienSkies.Screensaver/   Windows host: switch handling, settings dialog, multi-monitor panorama
+src/AlienSkies.Mac/           macOS host: Objective-C ScreenSaverView + NativeAOT library, build-saver.sh
 src/AlienSkies.Android/       Android host: screen saver, live wallpaper (with a small Java shim), settings app
 tests/AlienSkies.Core.Tests/  xUnit tests: Sol seen from α Centauri, tidal locking, Kepler, reference frames
 tools/AlienSkies.Preview/     Renders single frames to PNG on any OS
@@ -219,12 +255,11 @@ publish.ps1                   Builds AlienSkies.scr
 
 Highlights, with the full list in [`docs/DESIGN.md`](docs/DESIGN.md):
 
-- Companion stars as second suns, and sibling planets as bright wandering lights (in the TRAPPIST-1 system they would look larger than our Moon)
+- Companion stars that follow their real binary orbits
 - Procedurally drawn *local* constellations, linking each system's own brightest stars
-- A Milky Way band, atmospheric dimming near the horizon, and sky colour from the host star's temperature
+- Atmospheric dimming near the horizon, and sky colour from the host star's temperature
 - Proper motion: the sky from there, thousands of years ago or ahead
-- Cinematic flights between systems in tour mode
-- GPU rendering, and a macOS version
+- GPU rendering
 
 ## Acknowledgements
 
