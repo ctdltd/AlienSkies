@@ -3,6 +3,7 @@ name: CI
 # Builds everything except the Android app (which needs the .NET android
 # workload), runs the unit tests, and renders a few preview frames.
 # AlienSkies.CI.slnf is the solution minus AlienSkies.Android.
+# The macos-saver job builds the macOS screen saver bundle on a Mac runner.
 
 on:
   push:
@@ -72,6 +73,30 @@ jobs:
         with:
           name: preview-frames
           path: previews/*.png
+          if-no-files-found: error
+
+  macos-saver:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      # Universal (Apple silicon + Intel) bundle, ad-hoc signed; the smoke test loads the
+      # library the way the screen saver does and renders frames for two screens.
+      - name: Build Alien Skies.saver
+        run: src/AlienSkies.Mac/build-saver.sh --smoke
+
+      - name: Upload screen saver
+        uses: actions/upload-artifact@v4
+        with:
+          name: AlienSkies-macOS
+          path: |
+            artifacts/mac/AlienSkies-macOS.zip
+            artifacts/mac/smoke-frame.ppm
           if-no-files-found: error
 
   catalog-tools:

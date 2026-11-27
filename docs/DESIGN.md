@@ -94,5 +94,5 @@ Reproduce with `dotnet run --project tools/AlienSkies.Preview -- --planet "alf C
 
 **Platform**
 * GPU rendering (SkiaSharp's GL backend)
-* macOS `.saver` reusing the SkiaSharp renderer
+* macOS `.saver` reusing the SkiaSharp renderer (done: Objective-C `ScreenSaverView` plus the shared code as a NativeAOT dylib; see `src/AlienSkies.Mac`)
 * Android: a daylight-aware dim mode for bedside docks

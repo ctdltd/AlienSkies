@@ -3,6 +3,7 @@
     "path": "AlienSkies.sln",
     "projects": [
       "src\\AlienSkies.Core\\AlienSkies.Core.csproj",
+      "src\\AlienSkies.Mac\\AlienSkies.Mac.csproj",
       "src\\AlienSkies.Rendering\\AlienSkies.Rendering.csproj",
       "src\\AlienSkies.Screensaver\\AlienSkies.Screensaver.csproj",
       "tests\\AlienSkies.Core.Tests\\AlienSkies.Core.Tests.csproj",

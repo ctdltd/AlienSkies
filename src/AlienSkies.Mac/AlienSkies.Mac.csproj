@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The managed half of the macOS screen saver: the shared scene, settings and SkiaSharp renderer,
+       compiled ahead of time (NativeAOT) into a plain C-callable dylib. The ScreenSaverView in
+       Saver/AlienSkiesView.m loads it from inside the .saver bundle and calls the exports in
+       Exports.cs. build-saver.sh does the whole build on a Mac.
+
+       `dotnet build` (no runtime) just compiles it on any OS, which is what the Linux CI job does.
+       NativeAOT only happens on `dotnet publish -r osx-arm64|osx-x64` on a Mac (or linux-x64 on
+       Linux, used only to run the smoke test there). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>AlienSkies.Mac</RootNamespace>
+    <AssemblyName>AlienSkiesCore</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <PublishAot>true</PublishAot>
+    <NativeLib>Shared</NativeLib>
+    <SelfContained>true</SelfContained>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <!-- SaverSettings is stored with reflection-based System.Text.Json and the settings sheet is built by
+         reflecting over its properties, so keep every type and member of the shared assemblies. -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <TrimmerRootAssembly Include="AlienSkies.Core" />
+    <TrimmerRootAssembly Include="AlienSkies.Rendering" />
+  </ItemGroup>
+
+  <!-- SkiaSharp brings the macOS native library on its own; Linux is only for the smoke test. -->
+  <ItemGroup Condition="$(RuntimeIdentifier.StartsWith('linux'))">
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.157.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AlienSkies.Core\AlienSkies.Core.csproj" />
+    <ProjectReference Include="..\AlienSkies.Rendering\AlienSkies.Rendering.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Saver\**;Smoke\**" />
+  </ItemGroup>
+
+</Project>
