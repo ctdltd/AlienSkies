@@ -56,5 +56,20 @@ public sealed record ExoplanetSystem(
     public double HostAbsoluteV =>
         HostApparentV is double v ? Units.AbsoluteMagnitude(v, DistanceParsecs) : Units.SunAbsoluteV;
 
+    /// <summary>
+    /// Mass the planet orbits: both stars for a circumbinary planet (<see cref="KnownBinaries"/>), otherwise the
+    /// host's archive mass, or the Sun's when the archive has none.
+    /// </summary>
+    public double CentralMassSolar =>
+        KnownBinaries.CircumbinaryFor(HostName)?.TotalMassSolar ?? HostMassSolar ?? 1.0;
+
+    /// <summary>
+    /// The host's catalog B−V when known (imaginary planets around catalog stars). The exoplanet archive has
+    /// no host colour, so otherwise estimate it from absolute magnitude along the main sequence
+    /// (Sun: M 4.8 → 0.65; red dwarfs like TRAPPIST-1: M ≈ 18 → very red). Giants will come out too blue.
+    /// </summary>
+    public double HostColorBVOrEstimate =>
+        HostColorBV ?? System.Math.Clamp(0.65 + 0.11 * (HostAbsoluteV - Units.SunAbsoluteV), -0.3, 2.0);
+
     public override string ToString() => PlanetName;
 }

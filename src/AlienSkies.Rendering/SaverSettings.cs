@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using AlienSkies.Core.Astronomy;
 using AlienSkies.Core.Catalog;
 
@@ -162,11 +163,8 @@ public sealed class SaverSettings
     public double TourIntervalMinutes { get; set; } = 5;
 
     // ---- Persistence -------------------------------------------------------
-    private static readonly JsonSerializerOptions Json = new()
-    {
-        WriteIndented = true,
-        Converters = { new JsonStringEnumConverter() },
-    };
+    // Source-generated (see SaverSettingsJsonContext below) so the NativeAOT macOS build can read and write it too.
+    private static JsonTypeInfo<SaverSettings> Json => SaverSettingsJsonContext.Default.SaverSettings;
 
     public static string FilePath =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "AlienSkies", "settings.json");
@@ -176,7 +174,7 @@ public sealed class SaverSettings
         try
         {
             if (File.Exists(FilePath))
-                return JsonSerializer.Deserialize<SaverSettings>(File.ReadAllText(FilePath), Json) ?? new();
+                return JsonSerializer.Deserialize(File.ReadAllText(FilePath), Json) ?? new();
         }
         catch (Exception)
         {
@@ -192,8 +190,13 @@ public sealed class SaverSettings
     }
 
     public SaverSettings Clone() =>
-        JsonSerializer.Deserialize<SaverSettings>(JsonSerializer.Serialize(this, Json), Json)!;
+        JsonSerializer.Deserialize(JsonSerializer.Serialize(this, Json), Json)!;
 }
+
+/// <summary>settings.json format: indented, enums as names. New SaverSettings properties are picked up automatically.</summary>
+[JsonSourceGenerationOptions(WriteIndented = true, UseStringEnumConverter = true)]
+[JsonSerializable(typeof(SaverSettings))]
+internal sealed partial class SaverSettingsJsonContext : JsonSerializerContext;
 
 /// <summary>
 /// Offers the user's imaginary planets, then catalog planet names, as a drop-down (PropertyGrid on Windows, Spinner on

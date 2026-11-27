@@ -57,7 +57,7 @@ public sealed class PlanetConfig
     /// <summary>Builds a config from the archive values, filling unknowns with sensible defaults.</summary>
     public static PlanetConfig FromCatalog(ExoplanetSystem s, double latitudeDeg = 30, double longitudeDeg = 0)
     {
-        double mass = s.HostMassSolar ?? 1.0;
+        double mass = s.CentralMassSolar; // both stars for a circumbinary planet
         double a = s.SemiMajorAxisAu ?? (s.OrbitalPeriodDays is double p ? KeplerSemiMajorAxisAu(p, mass) : 1.0);
         double period = s.OrbitalPeriodDays ?? KeplerPeriodDays(a, mass);
 
