@@ -3,8 +3,8 @@ hip,name,ra_deg,dec_deg,plx_mas,vmag,bv
 # Build the real catalog with tools/build_catalog.py and drop it in %APPDATA%\AlienSkies\data.
 32349,Sirius,101.287,-16.716,379.21,-1.46,0.00
 30438,Canopus,95.988,-52.696,10.55,-0.74,0.15
-71683,Rigil Kentaurus,219.902,-60.834,747.1,-0.01,0.71
-71681,Toliman,219.896,-60.838,747.1,1.33,0.88
+71683,Rigil Kentaurus,219.920410,-60.835147,747.1,-0.01,0.71
+71681,Toliman,219.914128,-60.839471,747.1,1.33,0.88
 70890,Proxima Centauri,217.429,-62.680,768.07,11.13,1.82
 69673,Arcturus,213.915,19.182,88.83,-0.05,1.23
 91262,Vega,279.235,38.784,130.23,0.03,0.00
