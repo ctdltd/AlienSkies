@@ -25,11 +25,11 @@ internal static class Platform
                 NativeLibrary.TryLoad(Path.Combine(libDir, LibraryFile(name)), out var lib) ? lib : 0);
         }
 
-        // GetFolderPath answers "" while the folder is missing (as ~/.config is in a fresh screen saver sandbox),
+        // GetFolderPath answers "" while the folder is missing (it may be in a fresh screen saver sandbox),
         // which would put settings.json in the working directory. Creating it here fixes that for every later call.
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData, Environment.SpecialFolderOption.Create);
 
-        // Search order on macOS: ~/.config/AlienSkies/data (inside the screen saver's sandbox container),
+        // Search order on macOS: ~/Library/Application Support/AlienSkies/data (inside the screen saver's sandbox container),
         // then the bundle's Contents/Resources/data, then the samples embedded in AlienSkies.Core.
         string data = Path.Combine(resourceDir, "data");
         CatalogLoader.PlatformSource = fileName =>
