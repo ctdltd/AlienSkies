@@ -5,6 +5,7 @@ using SkiaSharp;
 // Usage: dotnet run --project tools/AlienSkies.Preview -- [--planet "TRAPPIST-1 e" | --star "Vega" [--name "Zorg"]] [--lat 30] [--lon 0]
 //        [--days 0 | --year 2035.5] [--az 180] [--alt 25] [--fov 100] [--width 1600] [--height 900] [--density 1] [--out sky.png]
 //        [--milkyway 1] [--milkyway-brightness 1] [--milkyway-style tint|detailed] [--siblings 1] [--info 1] [--ground 1] [--constellations 1] [--limit 6.5] [--color-boost 1.5]
+//        [--day-stars 0.8] [--orbit-plane 1] [--drift-minutes 0] (where the drifting info text sits after that long)
 //        [--bench 200] times frames instead of rendering one
 //        [--to "Proxima Cen b" [--progress 0.5 | --frames 12] [--warp true]]
 // --to renders a tour flight from the planet to another one: one frame at --progress (0 = lift-off, 1 = landing), or
@@ -36,6 +37,8 @@ var settings = new SaverSettings
     ShowConstellations = D("constellations", 1) != 0,
     LimitingMagnitude = D("limit", 6.5),
     ColorBoost = D("color-boost", 1.5),
+    StarsInDaylight = D("day-stars", 0.8),
+    ShowOrbitPlane = D("orbit-plane", 1) != 0,
 };
 if (opts.TryGetValue("planet", out var planet)) settings.PlanetName = planet;
 if (opts.TryGetValue("star", out var star))   // imaginary planet around any catalog star
@@ -50,7 +53,7 @@ settings.FlightWarp = bool.Parse(Get("warp", "true"));
 var size = new SKSizeI((int)D("width", 1600), (int)D("height", 900));
 var scene = new SkyScene(settings);
 using var surface = SKSurface.Create(new SKImageInfo(size.Width, size.Height));
-using var renderer = new SkyRenderer();
+using var renderer = new SkyRenderer { OverlayClockOffset = TimeSpan.FromMinutes(D("drift-minutes", 0)) };
 string outPath = Get("out", "sky.png");
 
 void Render(string path)
