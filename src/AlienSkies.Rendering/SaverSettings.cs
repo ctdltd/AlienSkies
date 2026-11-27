@@ -118,6 +118,18 @@ public sealed class SaverSettings
     [Description("Draw Earth's constellation figures so you can watch them distort with distance.")]
     public bool ShowConstellations { get; set; } = true;
 
+    [Category("4. View"), DisplayName("Show the Milky Way")]
+    [Description("Draw the band of the Milky Way as it looks from this planet. From any nearby star it is almost the same as from Earth; from distant systems it shifts.")]
+    public bool ShowMilkyWay { get; set; } = true;
+
+    [Category("4. View"), DisplayName("Milky Way brightness")]
+    [Description("1 = a dark country sky. Lower it for a subtler band, raise it (up to 3) for a long-exposure look.")]
+    public double MilkyWayBrightness { get; set; } = 1.0;
+
+    [Category("4. View"), DisplayName("Show sibling planets")]
+    [Description("Show the other planets of the same system as bright wandering points, with their phases when they are close enough to show a disc.")]
+    public bool ShowSiblingPlanets { get; set; } = true;
+
     [Category("4. View"), DisplayName("Label stars brighter than")]
     [Description("Magnitude threshold for name labels. Set below -30 to turn labels off.")]
     public double LabelMagnitudeLimit { get; set; } = 1.5;
@@ -126,6 +138,7 @@ public sealed class SaverSettings
     public bool MarkSol { get; set; } = true;
 
     [Category("4. View"), DisplayName("Show info overlay")]
+    [Description("Planet name, distance from Earth, the suns, the sibling planets, and where our Sun is, with an arrow at the screen edge when it is out of view.")]
     public bool ShowInfo { get; set; } = true;
 
     // ---- Time --------------------------------------------------------------

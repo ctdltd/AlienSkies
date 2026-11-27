@@ -64,8 +64,11 @@ public sealed partial class SkyRenderer : IDisposable
 
         var cam = new Camera(size, s.ViewAzimuthDeg + azimuthOffsetDeg, s.ViewAltitudeDeg, s.FieldOfViewDeg);
 
+        if (s.ShowMilkyWay) DrawMilkyWay(canvas, size, scene, horizon, s, s.ViewAzimuthDeg + azimuthOffsetDeg, day);
         if (s.ShowConstellations) DrawConstellations(canvas, scene, horizon, cam, s, day, density);
         DrawStars(canvas, scene, horizon, cam, s, limit, density);
+        if (s.ShowSiblingPlanets) DrawSiblings(canvas, scene, horizon, cam, s, planetOffset, limit, density);
+        else _siblingSightings.Clear();
         // Nearer suns pass in front. One crossing a hotter star's face shows as a dark disc against it.
         double brightestSurface = suns.Max(x => x.SurfaceBrightness);
         foreach (var sun in suns.OrderByDescending(x => x.DistanceAu))
@@ -74,7 +77,11 @@ public sealed partial class SkyRenderer : IDisposable
             DrawSun(canvas, sun, cam, density, inTransit ? sun.SurfaceBrightness / brightestSurface : 1);
         }
         if (s.ShowGround) DrawGround(canvas, cam, size, day);
-        if (s.ShowInfo) DrawInfo(canvas, size, scene, horizon, suns, s.MarkSol, density);
+        if (s.ShowInfo)
+        {
+            float infoTop = DrawInfo(canvas, size, scene, horizon, suns, s.MarkSol, density);
+            if (s.MarkSol) DrawSolPointer(canvas, size, scene, horizon, cam, infoTop, density);
+        }
     }
 
     private void DrawStars(SKCanvas canvas, SkyScene scene, HorizonBasis horizon, Camera cam,
@@ -171,7 +178,8 @@ public sealed partial class SkyRenderer : IDisposable
         canvas.DrawPath(path, _fill);
     }
 
-    private void DrawInfo(SKCanvas canvas, SKSizeI size, SkyScene scene, HorizonBasis horizon,
+    /// <returns>The top of the text block, so other overlay pieces can keep clear of it.</returns>
+    private float DrawInfo(SKCanvas canvas, SKSizeI size, SkyScene scene, HorizonBasis horizon,
                           IReadOnlyList<Sun> suns, bool markSol, float density)
     {
         var c = scene.Config;
@@ -185,6 +193,7 @@ public sealed partial class SkyRenderer : IDisposable
         };
         foreach (var sun in suns.Skip(1))
             lines.Add($"Second sun {sun.Name}: {sun.Altitude / Units.Deg:0}° altitude, mag {sun.Magnitude:0.0}, {sun.DistanceAu:0.#} AU away");
+        if (SiblingSummary() is string siblings) lines.Add(siblings);
 
         // Where to look for home, even when it is off-screen or below the horizon.
         if (markSol && scene.StarsById.TryGetValue(AlienSky.SolId, out var sol))
@@ -198,15 +207,17 @@ public sealed partial class SkyRenderer : IDisposable
         // Shrink to fit narrow screens (phones in portrait).
         float widest = lines.Max(l => font.MeasureText(l));
         float maxWidth = size.Width - 32 * density;
-        if (widest > maxWidth) font.Size *= maxWidth / widest;
+        if (widest > maxWidth) font.Size *= 0.97f * maxWidth / widest; // a little slack: glyph metrics do not scale exactly
 
         _fill.Color = new SKColor(210, 215, 225, 160);
         float y = size.Height - 16 * density - (lines.Count - 1) * font.Spacing;
+        float top = y - font.Size;
         foreach (var line in lines)
         {
             canvas.DrawText(line, 16 * density, y, SKTextAlign.Left, font, _fill);
             y += font.Spacing;
         }
+        return top;
     }
 
     // ---- helpers -----------------------------------------------------------
@@ -253,6 +264,8 @@ public sealed partial class SkyRenderer : IDisposable
     {
         _fill.Dispose();
         _stroke.Dispose();
+        _milkyWayPaint.Dispose();
+        _milkyWaySurface?.Dispose();
         _typeface.Dispose();
     }
 
@@ -281,6 +294,13 @@ public sealed partial class SkyRenderer : IDisposable
         /// <summary>Unit vector in (east, north, up) for an azimuth (from north, toward east) and altitude.</summary>
         public static Vector3d Local(double az, double alt) =>
             new(Math.Cos(alt) * Math.Sin(az), Math.Cos(alt) * Math.Cos(az), Math.Sin(alt));
+
+        public float CenterX => _cx;
+        public float CenterY => _cy;
+
+        /// <summary>Which way to turn toward a direction on screen (+x right, +y down), even when it is behind the camera.</summary>
+        public SKPoint ScreenDirection(Vector3d local) =>
+            new((float)Vector3d.Dot(local, _right), -(float)Vector3d.Dot(local, _up));
 
         public SKPoint? Project(Vector3d local)
         {

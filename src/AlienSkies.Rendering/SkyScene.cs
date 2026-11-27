@@ -27,6 +27,9 @@ public sealed class SkyScene
     public IReadOnlyDictionary<string, VisibleStar> StarsById { get; private set; } = null!;
     public IReadOnlyList<(string Constellation, string FromId, string ToId)> ConstellationLines => Lines.Value;
 
+    /// <summary>The other planets of the current system (catalog and imaginary), shown as wandering points.</summary>
+    public IReadOnlyList<SiblingPlanet> Siblings { get; private set; } = [];
+
     /// <summary>The flight under way between two systems in tour mode, or null when standing on a planet.</summary>
     public TourFlight? Flight { get; private set; }
 
@@ -163,7 +166,18 @@ public sealed class SkyScene
         Frame = new PlanetFrame(config);
         Sky = AlienSky.Build(config.Planet, Catalog.Value, s.LimitingMagnitude);
         StarsById = Sky.Stars.GroupBy(x => x.Id).ToDictionary(g => g.Key, g => g.First());
+        Siblings = SiblingPlanet.FindSiblings(config, SiblingCandidates(config.Planet.HostName));
         _epochDays = s.StartDays - _clock.Elapsed.TotalSeconds * s.TimeScale / 86_400.0;
+    }
+
+    /// <summary>Every planet, catalog or imaginary, around a host of this name. Catalog ones use catalog orbits.</summary>
+    private IEnumerable<PlanetConfig> SiblingCandidates(string hostName)
+    {
+        foreach (var p in Planets.Value)
+            if (p.HostName.Equals(hostName, StringComparison.OrdinalIgnoreCase))
+                yield return PlanetConfig.FromCatalog(p);
+        foreach (var mine in _settings.ImaginaryPlanets)
+            if (mine.ToConfig(Catalog.Value, 0, 0) is { } c) yield return c;
     }
 
     public double DistanceFromEarthLy => Sky.Planet.DistanceParsecs * Units.LightYearsPerParsec;

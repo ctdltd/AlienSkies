@@ -61,7 +61,7 @@ public static class CatalogLoader
         return stars;
     }
 
-    // exoplanets.csv: pl_name,hostname,ra,dec,sy_dist,sy_vmag,st_rad,st_mass,pl_orbsmax,pl_orbper,pl_orbincl,pl_orbeccen
+    // exoplanets.csv: pl_name,hostname,ra,dec,sy_dist,sy_vmag,st_rad,st_mass,pl_orbsmax,pl_orbper,pl_orbincl,pl_orbeccen,pl_rade
     public static IReadOnlyList<ExoplanetSystem> ParseExoplanets(TextReader reader)
     {
         var list = new List<ExoplanetSystem>();
@@ -69,7 +69,7 @@ public static class CatalogLoader
         {
             if (!TryD(f, 2, out var ra) || !TryD(f, 3, out var dec) || !TryD(f, 4, out var dist) || dist <= 0) continue;
             list.Add(new ExoplanetSystem(f[0], f[1], ra, dec, dist,
-                N(f, 5), N(f, 6), N(f, 7), N(f, 8), N(f, 9), N(f, 10), N(f, 11)));
+                N(f, 5), N(f, 6), N(f, 7), N(f, 8), N(f, 9), N(f, 10), N(f, 11), PlanetRadiusEarth: N(f, 12)));
         }
         return list;
     }

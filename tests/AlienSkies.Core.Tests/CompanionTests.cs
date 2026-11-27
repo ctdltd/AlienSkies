@@ -9,7 +9,7 @@ public class CompanionTests
     private const double AlfCenParallaxArcsec = 0.7471;
 
     private static ExoplanetSystem Planet(string host) =>
-        CatalogLoader.LoadExoplanets().Single(p => p.HostName == host);
+        CatalogLoader.LoadExoplanets().First(p => p.HostName == host);
 
     private static AlienSky Sky(string host) => AlienSky.Build(Planet(host), CatalogLoader.LoadStars());
 

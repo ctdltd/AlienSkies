@@ -77,6 +77,12 @@ Reproduce with `--planet "Kepler-16 b" --days 10.775 --az 264 --alt 9 --fov 60` 
 * **Tidal locking:** the rotation period equals the orbital period, phased so that longitude 0 faces the star. Eccentric orbits therefore show real optical libration; the tests see about 0.6° for TRAPPIST-1 e.
 * **Azimuth** is measured from the planet's north through east.
 
+## Milky Way and sibling planets
+
+**Milky Way.** `MilkyWayModel` (Core) is a hand-built map of the band as seen from Earth, in galactic coordinates: a disc brighter toward the centre, the bulge and bright star clouds, the Great Rift, the Coalsack and the Ophiuchus clouds, the Magellanic Clouds, and 3-D value noise for clumps. The renderer paints it once into a 1024×340 equirectangular texture. A 3° mesh in the *viewer's* galactic coordinates carries, at each vertex, the texture coordinate of the patch Earth sees in that direction (`Galactic.EarthDirectionOf`): the band's light is treated as lying 1.5 kpc away, so a viewer at position **x** looking along **u** sees what Earth sees along **x** + 1.5 kpc·**u**. For every star within a few tens of parsecs that is the identity to under a degree, which is the honest answer; a planet 500 pc above the plane sees the band drop about 19° below the galactic equator. Viewers beyond 900 pc are clamped to that distance. Each frame re-projects the mesh into a small offscreen surface (about 0.3° per pixel) that is then stretched over the screen, because Skia's CPU rasteriser fills textured triangles slowly.
+
+**Sibling planets.** Every other planet with the same host name (catalog or imaginary) is a `SiblingPlanet` on its own Keplerian orbit. Unknown inclinations take the viewer's, and all share the viewer's ascending node, because planets in one system are close to coplanar. The archive has no orbital phases, so each sibling starts at a fixed fraction of its orbit derived from its name. Brightness is reflected starlight with a Lambert phase law: m = m★(1 AU) − 2.5 log₁₀(p R² Φ(α) / (r² Δ²)), with geometric albedo p = 0.3 (0.5 for planets over 6 R⊕) and the radius from the archive's `pl_rade` (1 R⊕ when missing). Checked against Jupiter at opposition (−2.7) and Venus near greatest brilliancy (−4.5). A sibling whose disc spans more than a few pixels is drawn with its phase, lit on the side facing the star.
+
 ## Known simplifications (TODO)
 
 * Proper motion and radial velocity are not yet propagated. That matters for nearby systems and for a "simultaneous" sky.
@@ -94,10 +100,10 @@ Reproduce with `--planet "Kepler-16 b" --days 10.775 --az 264 --alt 9 --fov 60` 
 ## Roadmap ideas
 
 **Sky realism**
-* Sibling planets visible as "wanderers" (in TRAPPIST-1 they would appear larger than our Moon)
+* Sibling planets visible as "wanderers" (done; see "Milky Way and sibling planets" above)
 * Moons, user-defined
 * Atmospheric extinction and airmass dimming near the horizon, plus sky colour from host temperature (red-dwarf daylight)
-* Milky Way band from a Gaia density map. It looks nearly the same from anywhere within a few hundred parsecs, which is a lesson in itself.
+* Milky Way band (done as a hand-built model; a Gaia density map would be more faithful)
 * Proper-motion epoch slider: the sky from here, 100,000 years from now
 
 **Teaching overlays**
