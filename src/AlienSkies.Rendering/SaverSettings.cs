@@ -182,6 +182,11 @@ public sealed class SaverSettings
     [Description("While flying, crowd the stars toward the way you're heading and tint them blue ahead and red behind, as they would look close to the speed of light.")]
     public bool FlightWarp { get; set; } = true;
 
+    // ---- Extras ------------------------------------------------------------
+    [Category("7. Extras"), DisplayName("Passing starship")]
+    [Description("Every 10 to 20 minutes, at random, a small starship cruises across the sky and jumps away to warp.")]
+    public bool StarshipFlybys { get; set; } = true;
+
     // ---- Persistence -------------------------------------------------------
     // Source-generated (see SaverSettingsJsonContext below) so the NativeAOT macOS build can read and write it too.
     private static JsonTypeInfo<SaverSettings> Json => SaverSettingsJsonContext.Default.SaverSettings;

@@ -7,6 +7,7 @@ using SkiaSharp;
 //        [--milkyway 1] [--milkyway-brightness 1] [--milkyway-style tint|detailed] [--siblings 1] [--info 1] [--ground 1] [--constellations 1] [--limit 6.5] [--color-boost 1.5]
 //        [--bench 200] times frames instead of rendering one
 //        [--to "Proxima Cen b" [--progress 0.5 | --frames 12] [--warp true]]
+//        [--starship 3.5 [--seed 1] | --starship-frames 12] renders the passing starship easter egg, seconds into its pass
 // --to renders a tour flight from the planet to another one: one frame at --progress (0 = lift-off, 1 = landing), or
 // --frames evenly spaced frames written as <out>-00.png, <out>-01.png, ...
 var opts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -65,7 +66,23 @@ void Render(string path)
     Console.WriteLine($"Wrote {Path.GetFullPath(path)}  ({what})");
 }
 
-if (opts.TryGetValue("to", out var destination))
+if (opts.ContainsKey("starship") || opts.ContainsKey("starship-frames"))
+{
+    var ship = scene.LaunchStarship(new Random((int)D("seed", 1)));
+    Console.WriteLine($"Starship {StarshipFlyby.ShipName}: cruises {ship.CruiseSeconds:0.0} s, then {StarshipFlyby.WarpSeconds} s of warp exit");
+    int frames = (int)D("starship-frames", 0);
+    if (frames <= 0) { ship.Age = D("starship", ship.CruiseSeconds / 2); Render(outPath); }
+    else
+    {
+        string stem = Path.Combine(Path.GetDirectoryName(outPath) ?? "", Path.GetFileNameWithoutExtension(outPath));
+        for (int i = 0; i < frames; i++)
+        {
+            ship.Age = ship.DurationSeconds * i / Math.Max(frames - 1, 1);
+            Render($"{stem}-{i:00}.png");
+        }
+    }
+}
+else if (opts.TryGetValue("to", out var destination))
 {
     if (!scene.FlyTo(destination)) { Console.Error.WriteLine($"No planet named \"{destination}\"."); return 1; }
     int frames = (int)D("frames", 0);

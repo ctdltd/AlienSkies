@@ -76,6 +76,7 @@ public sealed partial class SkyRenderer : IDisposable
             bool inTransit = suns.Any(o => o.DistanceAu > sun.DistanceAu && o.VisibleFraction < 1);
             DrawSun(canvas, sun, cam, density, inTransit ? sun.SurfaceBrightness / brightestSurface : 1);
         }
+        if (scene.Starship is { } ship) DrawStarship(canvas, size, ship, cam, density);
         if (s.ShowGround) DrawGround(canvas, cam, size, day);
         if (s.ShowInfo)
         {
