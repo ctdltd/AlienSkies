@@ -13,7 +13,9 @@ Move away from Earth and familiar constellations stretch and break apart. Our ow
 ## What you see
 
 - **A real sky from another star.** Every catalog star is re-centred on the host star, with its direction and brightness recomputed for the new distance.
-- **Our Sun, labelled.** Sol is marked with its distance and apparent magnitude. The info line tells you where to look for it, by azimuth and altitude, even when it is off-screen or below the horizon, and how many years ago the light you're seeing left it.
+- **Our Sun, labelled.** Sol is marked with its distance and apparent magnitude. The info line tells you where to look for it, by azimuth and altitude, and how many years ago the light you're seeing left it; when it is out of view, an arrow at the screen edge shows which way to turn.
+- **The Milky Way, from there.** The band of our galaxy, with its bulge, star clouds, dark Great Rift and the Magellanic Clouds. From any nearby star it looks almost exactly as it does from Earth; from distant systems it shifts by parallax.
+- **Sibling planets.** The other planets of the same system wander across the sky as bright points. In TRAPPIST-1 they pass close enough to show a disc a little over half the size of our Moon, with its phase.
 - **Earth's constellations, distorted.** Optionally, the line figures of all 88 constellations are drawn so you can watch them warp with distance.
 - **A living planet.** It orbits its star on its real (Keplerian) orbit and spins on its axis. Tidally locked worlds even show the small wobble (libration) caused by an eccentric orbit.
 - **Day and night.** When the host star is up, the sky brightens and the stars wash out. Switch the atmosphere off for an airless world.
@@ -165,6 +167,8 @@ Settings live in `%APPDATA%\AlienSkies\settings.json` on Windows (in the app's p
 | | Pan across monitors | Continuous panorama on multiple screens |
 | | Limiting magnitude, star size | 6.5 ≈ a dark sky to the naked eye |
 | | Atmosphere / daylight, ground | |
+| | Milky Way, Milky Way brightness | 1 = a dark country sky, up to 3 for a long-exposure look |
+| | Sibling planets | The system's other planets as wandering points |
 | | Earth's constellations, star labels, mark our Sun, info overlay | |
 | **Time** | Time scale, start time | 600× = one Earth day every 2.4 minutes |
 | **Tour** | Tour mode, interval | Random planet and random spot on its surface |
@@ -219,9 +223,9 @@ publish.ps1                   Builds AlienSkies.scr
 
 Highlights, with the full list in [`docs/DESIGN.md`](docs/DESIGN.md):
 
-- Companion stars as second suns, and sibling planets as bright wandering lights (in the TRAPPIST-1 system they would look larger than our Moon)
+- Companion stars that follow their real binary orbits
 - Procedurally drawn *local* constellations, linking each system's own brightest stars
-- A Milky Way band, atmospheric dimming near the horizon, and sky colour from the host star's temperature
+- Atmospheric dimming near the horizon, and sky colour from the host star's temperature
 - Proper motion: the sky from there, thousands of years ago or ahead
 - Cinematic flights between systems in tour mode
 - GPU rendering, and a macOS version

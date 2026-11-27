@@ -21,7 +21,8 @@ public sealed record ExoplanetSystem(
     double? InclinationDeg,
     double? Eccentricity,
     double? HostColorBV = null,
-    bool IsImaginary = false)
+    bool IsImaginary = false,
+    double? PlanetRadiusEarth = null)
 {
     /// <summary>
     /// A made-up planet around any catalog star. The host's mass, radius and luminosity are estimated from its

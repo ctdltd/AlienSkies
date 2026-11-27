@@ -99,7 +99,7 @@ def gaia(g_limit: float, min_plx_over_error: float) -> list[dict]:
 
 def exoplanets() -> list[dict]:
     tap = pyvo.dal.TAPService(NASA_TAP)
-    cols = "pl_name,hostname,ra,dec,sy_dist,sy_vmag,st_rad,st_mass,pl_orbsmax,pl_orbper,pl_orbincl,pl_orbeccen"
+    cols = "pl_name,hostname,ra,dec,sy_dist,sy_vmag,st_rad,st_mass,pl_orbsmax,pl_orbper,pl_orbincl,pl_orbeccen,pl_rade"
     print("Querying NASA Exoplanet Archive (pscomppars)...")
     table = tap.search(f"SELECT {cols} FROM pscomppars WHERE sy_dist IS NOT NULL").to_table()
     rows = []

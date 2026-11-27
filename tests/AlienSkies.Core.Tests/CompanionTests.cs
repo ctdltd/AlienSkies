@@ -7,7 +7,7 @@ namespace AlienSkies.Core.Tests;
 public class CompanionTests
 {
     private static ExoplanetSystem Planet(string host) =>
-        CatalogLoader.LoadExoplanets().Single(p => p.HostName == host);
+        CatalogLoader.LoadExoplanets().First(p => p.HostName == host);
 
     private static AlienSky Sky(string host) => AlienSky.Build(Planet(host), CatalogLoader.LoadStars());
 

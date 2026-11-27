@@ -4,6 +4,7 @@ using SkiaSharp;
 
 // Usage: dotnet run --project tools/AlienSkies.Preview -- [--planet "TRAPPIST-1 e" | --star "Vega" [--name "Zorg"]] [--lat 30] [--lon 0]
 //        [--days 0] [--az 180] [--alt 25] [--fov 100] [--width 1600] [--height 900] [--density 1] [--out sky.png]
+//        [--milkyway 1] [--milkyway-brightness 1] [--siblings 1] [--info 1] [--ground 1] [--constellations 1] [--limit 6.5]
 var opts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 for (int i = 0; i + 1 < args.Length; i += 2) opts[args[i].TrimStart('-')] = args[i + 1];
 
@@ -19,6 +20,13 @@ var settings = new SaverSettings
     ViewAzimuthDeg = D("az", 180),
     ViewAltitudeDeg = D("alt", 25),
     FieldOfViewDeg = D("fov", 100),
+    ShowMilkyWay = D("milkyway", 1) != 0,
+    MilkyWayBrightness = D("milkyway-brightness", 1),
+    ShowSiblingPlanets = D("siblings", 1) != 0,
+    ShowInfo = D("info", 1) != 0,
+    ShowGround = D("ground", 1) != 0,
+    ShowConstellations = D("constellations", 1) != 0,
+    LimitingMagnitude = D("limit", 6.5),
 };
 if (opts.TryGetValue("planet", out var planet)) settings.PlanetName = planet;
 if (opts.TryGetValue("star", out var star))   // imaginary planet around any catalog star
