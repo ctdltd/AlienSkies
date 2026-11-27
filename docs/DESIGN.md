@@ -36,19 +36,38 @@ Every vector stays in ICRS-aligned axes, so no rotation matrices pile up.
 
 ### Companion stars (second suns)
 
-Catalog stars within max(0.02 pc, 0.5% of the host distance) of the host position are members of the host's own system. The nearest one is the host itself. The others become `CompanionStar`s instead of fixed stars:
+Catalog stars within max(0.02 pc, 0.5% of the host distance) of the host position are members of the host's own system. The nearest one is the host itself. The others become `CompanionStar`s instead of fixed stars, and each one moves along a binary orbit (`BinaryOrbit`):
 
-* Their parallaxes are no better than the cross-match slop, so the line-of-sight offset is discarded and only the sky-plane (projected) separation is kept, converted to AU. That is the closest the pair can be, so the companion is never too faint.
-* Unlike fixed stars, a companion is re-aimed every frame from the planet's position (`offset − planetOffset`), so a planet's orbit gives it a few degrees of parallax and a small brightness swing.
-* The disc size is estimated along the main sequence (R ∝ L^0.2). Daylight comes from whichever sun is brightest above the horizon, so a companion alone in the sky gives a twilight glow.
+* **Measured orbits** come from `KnownBinaries`, keyed by catalog id. α Cen B uses Pourbaix & Boyajian (2016): P = 79.91 yr, a = 17.66″ (23.6 AU at the catalog parallax), e = 0.524, i = 79.3°, Ω = 205.1°, ω = 232.3°, periastron 1875.66 + n·P. The tests check it against the sample catalog (B 17.8″ from A at PA 216° in 1991.25), against the ~4″ the pair closed to in 2016, and against Kepler's third law with 2.04 M☉.
+* **Unmeasured pairs** get a stand-in: a circular orbit, face-on to Earth, with the catalog's projected separation as its radius and the period Kepler's third law gives for both stars' estimated masses. The pair's parallaxes are no better than the cross-match slop, so the line-of-sight offset is discarded; face-on keeps the pair exactly as far apart as the catalog shows them at every moment, and the companion sits at its catalog position at the catalog epoch (J1991.25).
+* Elements use the visual-binary (Thiele–Innes) convention, measured on Earth's sky like the planets' elements: x north, y east, z away from Earth; the ascending node is where the secondary recedes.
+* Every frame the companion is re-aimed from the planet's position (`offset(t) − planetOffset(t)`), so it shows both its own orbital motion and a few degrees of parallax from the planet's year.
+* The disc size is measured where known and otherwise estimated along the main sequence (R ∝ L^0.2). Daylight comes from whichever sun is brightest above the horizon, so a companion alone in the sky gives a twilight glow.
 
-From the α Cen A sample, Toliman (α Cen B) sits about 24 AU away at magnitude −19, about 300 times brighter than our full Moon:
+The simulation clock's day 0 is **J2000.0** for binary orbits; `--year` in the Preview tool converts a calendar date. From the α Cen A sample, Toliman sweeps from 36 AU (1995, magnitude −18) in to 11.2 AU at periastron in 2035 (magnitude −20.5, ten times brighter, and visibly a disc):
 
-![Sunset with Toliman above alf Cen A](images/alpha-cen-two-suns.png)
+![Sunset in 2035, with Toliman at periastron beside alf Cen A](images/alpha-cen-two-suns.png)
 
-![Toliman alone in the sky after alf Cen A has set](images/alpha-cen-toliman-night.png)
+![Toliman alone in the sky in 2026, after alf Cen A has set](images/alpha-cen-toliman-night.png)
 
-Reproduce with `dotnet run --project tools/AlienSkies.Preview -- --planet "alf Cen A (hypothetical Earth)" --days 4.75 --az 285 --alt 12` and `--days 237.31 --az 62 --alt 25`.
+Reproduce with `dotnet run --project tools/AlienSkies.Preview -- --planet "alf Cen A (hypothetical Earth)" --days 12955.352 --az 255 --alt 10` and `--days 9700 --az 238 --alt 25`.
+
+### Circumbinary planets (two suns, one orbit)
+
+Some planets orbit both stars of a close pair: Kepler-16 b, Kepler-47 c, TOI-1338 b. The exoplanet archive flags them but doesn't describe the pair, so `KnownBinaries` carries each pair's masses, radii, colours, V-band light split and orbit from the discovery papers. When a planet's host name matches (`Kepler-16` or `Kepler-16 AB`):
+
+* The planet's orbit is around the pair's **barycentre**, and Kepler's third law uses both masses (`ExoplanetSystem.CentralMassSolar`): 0.89 M☉ gives Kepler-16 b's measured 228.8 days, where star A alone would give 260.
+* Star A sits at `−M_B/M · r(t)` and star B at `+M_A/M · r(t)` from the barycentre, where `r(t)` is the relative orbit. `AlienSky.HostOffsetAu(t)` and the companion's `OffsetAu(t)` give both.
+* The archive's `sy_vmag` is the pair's combined light; it is split between the stars by their light fractions, so the two add back up to the catalog magnitude.
+* Transit-found pairs and planets are both nearly edge-on to us, and the unmeasurable ascending nodes default to 0° for both, so they come out as nearly coplanar as measured (Kepler-16: within 0.3°). That means **the suns eclipse each other** as seen from the planet, at every conjunction.
+
+`AlienSky.SunsFromPlanet(planetOffset, t)` returns every sun as seen from the planet, host first. Where a nearer disc overlaps a farther one, the farther sun is dimmed by the covered share of its disc (uniform discs, no limb darkening), and the renderer draws nearer suns on top, with a cool star crossing a hotter one drawn dark.
+
+![Double sunset on Kepler-16 b](images/kepler16-double-sunset.png)
+
+![Kepler-16 B crossing the face of Kepler-16 A, seen from the planet](images/kepler16-eclipse.png)
+
+Reproduce with `--planet "Kepler-16 b" --days 10.775 --az 264 --alt 9 --fov 60` and `--days 7.57 --az 205 --alt 57.5 --fov 6 --width 800 --height 450`.
 
 ## Conventions
 
@@ -62,9 +81,11 @@ Reproduce with `dotnet run --project tools/AlienSkies.Preview -- --planet "alf C
 
 * Proper motion and radial velocity are not yet propagated. That matters for nearby systems and for a "simultaneous" sky.
 * Interstellar extinction is ignored, so distant stars look slightly too bright.
-* Companion stars are static: they sit at their catalog projected separation and do not follow their binary orbit (α Cen AB: 79.9 yr, 11–36 AU). Circumbinary planets (Kepler-16) would need the planet to orbit the barycentre instead of one star.
+* Only α Cen AB has a measured binary orbit so far; other catalog companions circle face-on at their projected separation. Circumbinary systems are limited to those in `KnownBinaries` (Kepler-16, Kepler-47, TOI-1338); others in a full archive build are treated as single stars.
+* Binary and planet orbits are fixed Kepler ellipses. Real circumbinary planets precess and their orbits wobble with the pair, which this ignores.
+* The host star itself stays at the centre of an S-type planet's orbit: the planet's motion with its host around the binary barycentre doesn't change what it sees.
 * If the host itself is missing from the star catalog, its nearest companion is taken for the host.
-* Host luminosity comes from the archive's `sy_vmag`, which is the *system* magnitude and slightly too bright for multiples.
+* Host luminosity comes from the archive's `sy_vmag`, which is the *system* magnitude and slightly too bright for multiples (except circumbinary hosts, where it is split between the two stars).
 * The B−V colour ramp is approximate. Gaia stars use a rough BP−RP → B−V stand-in.
 * The SkiaSharp renderer draws on the CPU. It should handle tens of thousands of visible stars, but a GPU path (Skia's GL backend) is the next step if a full Gaia catalog is used.
 * Host-star colour isn't in the exoplanet archive, so it is estimated from absolute magnitude along the main sequence; giant hosts come out too blue.
@@ -73,7 +94,6 @@ Reproduce with `dotnet run --project tools/AlienSkies.Preview -- --planet "alf C
 ## Roadmap ideas
 
 **Sky realism**
-* Binary orbits for companion stars, and circumbinary planets (Kepler-16)
 * Sibling planets visible as "wanderers" (in TRAPPIST-1 they would appear larger than our Moon)
 * Moons, user-defined
 * Atmospheric extinction and airmass dimming near the horizon, plus sky colour from host temperature (red-dwarf daylight)
@@ -94,5 +114,5 @@ Reproduce with `dotnet run --project tools/AlienSkies.Preview -- --planet "alf C
 
 **Platform**
 * GPU rendering (SkiaSharp's GL backend)
-* macOS `.saver` reusing the SkiaSharp renderer
+* macOS `.saver` reusing the SkiaSharp renderer (done: Objective-C `ScreenSaverView` plus the shared code as a NativeAOT dylib; see `src/AlienSkies.Mac`)
 * Android: a daylight-aware dim mode for bedside docks

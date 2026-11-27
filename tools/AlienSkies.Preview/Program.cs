@@ -3,7 +3,7 @@ using AlienSkies.Rendering;
 using SkiaSharp;
 
 // Usage: dotnet run --project tools/AlienSkies.Preview -- [--planet "TRAPPIST-1 e" | --star "Vega" [--name "Zorg"]] [--lat 30] [--lon 0]
-//        [--days 0] [--az 180] [--alt 25] [--fov 100] [--width 1600] [--height 900] [--density 1] [--out sky.png]
+//        [--days 0 | --year 2035.5] [--az 180] [--alt 25] [--fov 100] [--width 1600] [--height 900] [--density 1] [--out sky.png]
 var opts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 for (int i = 0; i + 1 < args.Length; i += 2) opts[args[i].TrimStart('-')] = args[i + 1];
 
@@ -13,7 +13,10 @@ double D(string key, double fallback) => double.Parse(Get(key, fallback.ToString
 var settings = new SaverSettings
 {
     TimeScale = 0, // freeze the clock so the frame is reproducible
-    StartDays = D("days", 0),
+    // Day 0 is J2000.0; --year picks a calendar date instead (it matters for binary orbits such as α Cen AB).
+    StartDays = opts.ContainsKey("year")
+        ? AlienSkies.Core.Astronomy.BinaryOrbit.DaysSinceJ2000(D("year", 2000)) + D("days", 0)
+        : D("days", 0),
     LatitudeDeg = D("lat", 30),
     LongitudeDeg = D("lon", 0),
     ViewAzimuthDeg = D("az", 180),
