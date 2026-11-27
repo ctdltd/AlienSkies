@@ -61,7 +61,7 @@ Render a single frame to a PNG, on any OS (handy for checking drawing changes wi
 dotnet run --project tools/AlienSkies.Preview -- --planet "TRAPPIST-1 e" --lat 30 --az 180 --out sky.png
 ```
 
-Other options are `--lon`, `--days`, `--alt`, `--fov`, `--width`, `--height` and `--density`.
+Use `--star "Tau Ceti"` (and optionally `--name "My world"`) instead of `--planet` to stand on an imaginary planet around any catalog star. Other options are `--lon`, `--days`, `--alt`, `--fov`, `--width`, `--height` and `--density`.
 
 Build the screen saver file:
 
@@ -152,8 +152,9 @@ Settings live in `%APPDATA%\AlienSkies\settings.json` on Windows (in the app's p
 
 | Group | Setting | Notes |
 |---|---|---|
-| **Planet** | Planet | Drop-down of every planet in the exoplanet catalog |
-| | Use catalog orbit | Off = use the overrides below |
+| **Planet** | Planet | Drop-down of your imaginary planets, then every planet in the exoplanet catalog |
+| | Imaginary planets | Your own planets around any catalog star, each with its own orbit and spin; see below |
+| | Use catalog orbit | Off = use the overrides below (catalog planets only) |
 | | Orbital radius (AU), orbital period (days) | Period 0 = derive it from the radius and the star's mass (Kepler's third law) |
 | | Eccentricity, inclination, ascending node | Catalog conventions; see below |
 | **Spin** | Rotation | Auto (locks orbits closer than 0.1 AU), Tidally locked, or Free |
@@ -167,6 +168,13 @@ Settings live in `%APPDATA%\AlienSkies\settings.json` on Windows (in the app's p
 | | Earth's constellations, star labels, mark our Sun, info overlay | |
 | **Time** | Time scale, start time | 600× = one Earth day every 2.4 minutes |
 | **Tour** | Tour mode, interval | Random planet and random spot on its surface |
+| | Include imaginary planets | Lets the tour visit your imaginary planets too |
+
+### Imaginary planets
+
+Add as many made-up planets as you like under **Imaginary planets** (the **…** button on Windows, **Add an imaginary planet** on Android). Each one names a host star (any named catalog star; on Windows you can also type `HIP 12345` for an unnamed one) and has its own orbit and spin. It then shows up at the top of the **Planet** list, and tour mode visits it too unless you turn off **Include imaginary planets**.
+
+Leave the orbital radius and period at 0 and they're worked out from the star: its luminosity, mass and radius are estimated from its brightness and colour, the planet is placed where it gets the same starlight Earth gets from the Sun, and the period follows from Kepler's third law. Around a red dwarf like Proxima that's about 0.04 AU and 8 days, close enough that **Auto** rotation locks it; around Tau Ceti it's 0.69 AU and 228 days. New planets start with Earth's 23.44° axial tilt and a 24-hour day. The estimates assume a main-sequence star, so a giant's mass comes out too high.
 
 ### Two conventions worth knowing
 

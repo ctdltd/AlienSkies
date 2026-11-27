@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
+using AlienSkies.Core.Astronomy;
 using AlienSkies.Rendering;
 using Android.App;
 using Android.Content;
@@ -15,7 +16,8 @@ namespace AlienSkies.Droid;
 /// The app's launcher screen and the settings page for both the screen saver and the live wallpaper. Builds its form from the same
 /// <see cref="SaverSettings"/> attributes the Windows PropertyGrid uses ([Category], [DisplayName],
 /// [Description]), so both platforms stay in step automatically. Properties with a list of
-/// standard values (the planet) appear as drop-downs. Changes are saved when you leave.
+/// standard values (the planet) appear as drop-downs. Imaginary planets get their own add/remove section, each
+/// generated the same way from <see cref="ImaginaryPlanet"/>. Changes are saved when you leave.
 /// </summary>
 [Activity(
     Name = "com.certificationtoolanddie.alienskies.SettingsActivity",
@@ -54,7 +56,11 @@ public sealed class SettingsActivity : Activity
         foreach (var group in properties)
         {
             form.AddView(Heading(StripOrderPrefix(group.Key)));
-            foreach (var property in group) form.AddView(Editor(property));
+            foreach (var property in group)
+            {
+                if (property.PropertyType == typeof(List<ImaginaryPlanet>)) AddImaginaryPlanets(form, property);
+                else form.AddView(Editor(property, _settings));
+            }
         }
 
         var scroll = new ScrollView(this);
@@ -70,7 +76,10 @@ public sealed class SettingsActivity : Activity
 
     private void Persist()
     {
+        var selected = _settings.SelectedImaginaryPlanet();
+        var oldName = selected?.DisplayName;
         foreach (var read in _readers) read();
+        _settings.FollowRename(selected, oldName);
         _settings.Save();
     }
 
@@ -126,9 +135,51 @@ public sealed class SettingsActivity : Activity
         catch (ActivityNotFoundException) { Toast.MakeText(this, failureMessage, ToastLength.Long)!.Show(); }
     }
 
+    // ---- imaginary planets ---------------------------------------------------
+
+    private void AddImaginaryPlanets(LinearLayout form, PropertyInfo property)
+    {
+        var help = property.GetCustomAttribute<DescriptionAttribute>()?.Description;
+        form.AddView(Heading(property.GetCustomAttribute<DisplayNameAttribute>()?.DisplayName ?? property.Name, 16));
+        if (help is not null) form.AddView(Hint(help));
+
+        var fields = typeof(ImaginaryPlanet)
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.CanRead && p.CanWrite && p.GetCustomAttribute<BrowsableAttribute>()?.Browsable != false)
+            .ToArray();
+
+        var planets = _settings.ImaginaryPlanets;
+        for (int i = 0; i < planets.Count; i++)
+        {
+            var planet = planets[i];
+            var card = new LinearLayout(this) { Orientation = Orientation.Vertical };
+            card.SetPadding(Px(12), Px(4), 0, Px(8));
+            card.AddView(Heading($"{i + 1}. {planet.DisplayName}", 15));
+            foreach (var field in fields) card.AddView(Editor(field, planet));
+
+            var remove = new Button(this) { Text = "Remove this planet" };
+            remove.Click += (_, _) => ChangeImaginaryPlanets(() => planets.Remove(planet));
+            card.AddView(remove);
+            form.AddView(card);
+        }
+
+        var add = new Button(this) { Text = "Add an imaginary planet" };
+        add.Click += (_, _) => ChangeImaginaryPlanets(() => planets.Add(new ImaginaryPlanet()));
+        form.AddView(add);
+    }
+
+    /// <summary>Saves what's on screen, applies the change, and rebuilds the form (so the Planet list picks it up too).</summary>
+    private void ChangeImaginaryPlanets(Action change)
+    {
+        Persist();
+        change();
+        _settings.Save();
+        Recreate();
+    }
+
     // ---- editors -------------------------------------------------------------
 
-    private View Editor(PropertyInfo property)
+    private View Editor(PropertyInfo property, object target)
     {
         var block = new LinearLayout(this) { Orientation = Orientation.Vertical };
         block.SetPadding(0, Px(10), 0, 0);
@@ -138,9 +189,9 @@ public sealed class SettingsActivity : Activity
 
         if (property.PropertyType == typeof(bool))
         {
-            var toggle = new Switch(this) { Text = label, Checked = (bool)property.GetValue(_settings)! };
+            var toggle = new Switch(this) { Text = label, Checked = (bool)property.GetValue(target)! };
             block.AddView(toggle);
-            _readers.Add(() => property.SetValue(_settings, toggle.Checked));
+            _readers.Add(() => property.SetValue(target, toggle.Checked));
         }
         else
         {
@@ -153,66 +204,71 @@ public sealed class SettingsActivity : Activity
                 {
                     Adapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleSpinnerDropDownItem, names),
                 };
-                spinner.SetSelection(Array.IndexOf(names, property.GetValue(_settings)!.ToString()));
+                spinner.SetSelection(Array.IndexOf(names, property.GetValue(target)!.ToString()));
                 block.AddView(spinner);
-                _readers.Add(() => property.SetValue(_settings,
+                _readers.Add(() => property.SetValue(target,
                     Enum.Parse(property.PropertyType, names[Math.Max(0, spinner.SelectedItemPosition)])));
             }
             else if (property.PropertyType == typeof(string) &&
-                     TypeDescriptor.GetProperties(_settings)[property.Name]?.Converter is { } converter &&
+                     TypeDescriptor.GetProperties(target)[property.Name]?.Converter is { } converter &&
                      converter.GetStandardValuesSupported())
             {
                 // Pick-list (e.g. Planet): choices come from the property's TypeConverter.
-                var values = converter.GetStandardValues()!.Cast<object>().Select(v => v.ToString()!).ToArray();
+                var values = converter.GetStandardValues(new InstanceContext(target))!.Cast<object>().Select(v => v.ToString()!).ToArray();
                 var spinner = new Spinner(this)
                 {
                     Adapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleSpinnerDropDownItem, values),
                 };
                 // A saved name no longer in the catalog shows (and saves) the first entry rather than a stale value.
                 int current = Array.FindIndex(values, v =>
-                    string.Equals(v, (string?)property.GetValue(_settings), StringComparison.OrdinalIgnoreCase));
+                    string.Equals(v, (string?)property.GetValue(target), StringComparison.OrdinalIgnoreCase));
                 spinner.SetSelection(Math.Max(0, current));
                 block.AddView(spinner);
                 _readers.Add(() =>
                 {
-                    if (values.Length > 0) property.SetValue(_settings, values[Math.Max(0, spinner.SelectedItemPosition)]);
+                    if (values.Length > 0) property.SetValue(target, values[Math.Max(0, spinner.SelectedItemPosition)]);
                 });
             }
             else if (property.PropertyType == typeof(string))
             {
-                var text = new EditText(this) { Text = (string?)property.GetValue(_settings) };
+                var text = new EditText(this) { Text = (string?)property.GetValue(target) };
                 block.AddView(text);
-                _readers.Add(() => property.SetValue(_settings, text.Text));
+                _readers.Add(() => property.SetValue(target, text.Text));
             }
             else if (property.PropertyType == typeof(double))
             {
                 var number = new EditText(this)
                 {
                     InputType = InputTypes.ClassNumber | InputTypes.NumberFlagDecimal | InputTypes.NumberFlagSigned,
-                    Text = ((double)property.GetValue(_settings)!).ToString(CultureInfo.InvariantCulture),
+                    Text = ((double)property.GetValue(target)!).ToString(CultureInfo.InvariantCulture),
                 };
                 block.AddView(number);
                 _readers.Add(() =>
                 {
                     if (double.TryParse(number.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
-                        property.SetValue(_settings, v);
+                        property.SetValue(target, v);
                 });
             }
         }
 
         if (help is not null)
         {
-            var hint = new TextView(this) { Text = help, Alpha = 0.7f };
-            hint.SetTextSize(Android.Util.ComplexUnitType.Sp, 12);
-            block.AddView(hint);
+            block.AddView(Hint(help));
         }
         return block;
     }
 
-    private TextView Heading(string text)
+    private TextView Hint(string text)
+    {
+        var hint = new TextView(this) { Text = text, Alpha = 0.7f };
+        hint.SetTextSize(Android.Util.ComplexUnitType.Sp, 12);
+        return hint;
+    }
+
+    private TextView Heading(string text, int sizeSp = 18)
     {
         var heading = new TextView(this) { Text = text };
-        heading.SetTextSize(Android.Util.ComplexUnitType.Sp, 18);
+        heading.SetTextSize(Android.Util.ComplexUnitType.Sp, sizeSp);
         heading.SetPadding(0, Px(24), 0, Px(4));
         return heading;
     }
