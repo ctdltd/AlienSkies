@@ -4,8 +4,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <Company>Certification Tool and Die, Ltd.</Company>
+    <Company>Certification Tool and Die Ltd. Co.</Company>
     <Product>Alien Skies</Product>
+    <!-- GPL-3.0-or-later; see LICENSE, THIRD-PARTY-NOTICES.md and AlienSkies.Rendering/AboutInfo.cs. -->
+    <Copyright>Copyright © 2026 Certification Tool and Die Ltd. Co. Licensed under the GNU GPL v3 or later.</Copyright>
     <!-- Release number YYddd.hhmm: two-digit year, day of the year (001-366), then the local hour and minute of the
          build, e.g. 26331.0510. Release builds stamp it automatically; pass -p:AlienSkiesStamp=26331.0510 to pin it
          (say, to give every platform the same number). Debug builds keep a fixed number so they stay incremental. -->

@@ -149,6 +149,14 @@ public static unsafe class Exports
         catch (Exception ex) { Record(ex); return null; }
     }
 
+    /// <summary>Copyright, GPL notice and credits for the foot of the settings sheet. Free with <c>as_free</c>.</summary>
+    [UnmanagedCallersOnly(EntryPoint = "as_about_text")]
+    public static byte* AboutText()
+    {
+        try { return Alloc(AboutInfo.Text()); }
+        catch (Exception ex) { Record(ex); return null; }
+    }
+
     /// <summary>The message of the last failure, owned by the library (do not free).</summary>
     [UnmanagedCallersOnly(EntryPoint = "as_last_error")]
     public static byte* LastError()

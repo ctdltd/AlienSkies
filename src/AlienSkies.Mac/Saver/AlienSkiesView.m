@@ -30,7 +30,7 @@ static struct {
     as_view_create_fn viewCreate;
     as_view_render_fn viewRender;
     as_view_destroy_fn viewDestroy;
-    as_string_fn settingsSchema, settingsPath, lastError;
+    as_string_fn settingsSchema, settingsPath, aboutText, lastError;
     as_settings_apply_fn settingsApply;
     as_void_fn settingsReload;
     as_free_fn release;
@@ -66,6 +66,7 @@ static BOOL LoadCore(NSBundle *bundle) {
     BIND(viewDestroy, as_view_destroy_fn, "as_view_destroy")
     BIND(settingsSchema, as_string_fn, "as_settings_schema")
     BIND(settingsPath, as_string_fn, "as_settings_path")
+    BIND(aboutText, as_string_fn, "as_about_text")
     BIND(lastError, as_string_fn, "as_last_error")
     BIND(settingsApply, as_settings_apply_fn, "as_settings_apply")
     BIND(settingsReload, as_void_fn, "as_settings_reload")
@@ -309,7 +310,27 @@ static NSString *TakeString(char *s) {
     note.textColor = NSColor.secondaryLabelColor;
     note.frame = NSMakeRect(margin, y + 8, width - 2 * margin, 30);
     [form addSubview:note];
-    y += 40 + margin;
+    y += 40;
+
+    // Copyright, GPL notice and credits (the same text as the Windows About box and the Android settings page).
+    NSString *aboutString = TakeString(Core.aboutText());
+    if (aboutString.length) {
+        NSTextField *aboutHeading = [NSTextField labelWithString:@"About"];
+        aboutHeading.font = [NSFont boldSystemFontOfSize:14];
+        aboutHeading.frame = NSMakeRect(margin, y + 6, width - 2 * margin, 20);
+        [form addSubview:aboutHeading];
+        y += 32;
+        NSTextField *about = [NSTextField wrappingLabelWithString:aboutString];
+        about.font = [NSFont systemFontOfSize:11];
+        about.textColor = NSColor.secondaryLabelColor;
+        about.selectable = YES;
+        about.preferredMaxLayoutWidth = width - 2 * margin;
+        NSSize size = [about sizeThatFits:NSMakeSize(width - 2 * margin, CGFLOAT_MAX)];
+        about.frame = NSMakeRect(margin, y, width - 2 * margin, ceil(size.height));
+        [form addSubview:about];
+        y += ceil(size.height);
+    }
+    y += margin;
     [form setFrameSize:NSMakeSize(width, y)];
 
     const CGFloat height = 620, buttonBar = 56;

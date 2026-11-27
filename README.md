@@ -283,4 +283,8 @@ This project uses data from:
 
 ## License
 
-Copyright © 2026 Certification Tool and Die, Ltd. All rights reserved.
+Copyright © 2026 Certification Tool and Die Ltd. Co.
+
+Alien Skies is free software: you can redistribute it and/or modify it under the terms of the [GNU General Public License](LICENSE) as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. It is distributed in the hope that it will be useful, but **without any warranty**; see the license for details.
+
+The bundled star, planet and constellation data keep their own terms, and the app's libraries have their own licenses: see [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md). Each app shows the copyright, license and credits in its settings screen (**About** in the Windows settings dialog, the foot of the Android settings page and the macOS options sheet).
