@@ -62,6 +62,7 @@ jobs:
           render --planet "Proxima Cen b" --lat -30 --az 0 --width 1280 --height 720 --out previews/proxima-cen-b.png
           render --planet "eps Eri b" --alt 60 --fov 120 --width 1280 --height 720 --out previews/eps-eri-b.png
           render --planet "alf Cen A (hypothetical Earth)" --days 100 --width 1280 --height 720 --out previews/alf-cen-a.png
+          render --planet "Kepler-16 b" --days 10.775 --az 264 --alt 9 --fov 60 --width 1280 --height 720 --out previews/kepler-16b-double-sunset.png
           render --star "Tau Ceti" --name "Imaginary Tau Ceti world" --width 1280 --height 720 --out previews/imaginary-tau-ceti.png
           for f in previews/*.png; do
             test -s "$f" || { echo "::error::$f is empty"; exit 1; }
