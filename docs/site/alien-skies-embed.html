@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alien Skies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;700&family=Roboto:wght@400;500&family=Source+Code+Pro:wght@400;600&display=swap">
+<style>
+/* Layout: one night-sky column. Full-bleed hero image, then alternating image/text rows,
+   a feature grid, trailer, phone gallery, platform cards and credits. Single dark look by design. */
+:root {
+  --sky: #070a13;        /* page ground: the renderer's own night sky */
+  --sky-2: #0e1322;      /* raised panels */
+  --rule: #222a3f;       /* hairlines */
+  --star: #e8e6df;       /* body text, warm starlight */
+  --dim: #9aa3b8;        /* secondary text */
+  --sol: #f2b84b;        /* our Sun's label colour in the app: the accent */
+  --blue: #9cc2ff;       /* hot-star blue: links */
+  --display: "Bitter", Georgia, "Times New Roman", serif;
+  --text: "Roboto", "Segoe UI", system-ui, sans-serif;
+  --mono: "Source Code Pro", ui-monospace, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--sky); }
+body { color: var(--star); font: 400 17px/1.6 var(--text); -webkit-font-smoothing: antialiased; }
+img, video { max-width: 100%; display: block; }
+a { color: var(--blue); text-underline-offset: 3px; }
+a:hover { color: var(--star); }
+a:focus-visible, .btn:focus-visible { outline: 2px solid var(--sol); outline-offset: 3px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; line-height: 1.15; text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.wrap { max-width: 1080px; margin: 0 auto; padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.eyebrow { font: 600 13px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--sol); }
+.readout { font: 400 12.5px/1.55 var(--mono); color: var(--dim); }
+section { padding-block: 64px; border-top: 1px solid var(--rule); }
+
+/* Hero */
+.hero { position: relative; min-height: 560px; display: flex; align-items: flex-end; overflow: hidden; border-top: 0; padding-block: 0; }
+.hero img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 60% 40%; }
+.hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,10,19,.15) 0%, rgba(7,10,19,.35) 45%, var(--sky) 100%), linear-gradient(90deg, rgba(7,10,19,.85) 0%, rgba(7,10,19,0) 70%); }
+.hero .wrap { position: relative; z-index: 1; width: 100%; padding-block: 72px 40px; }
+.hero-inner { max-width: 620px; display: grid; gap: 18px; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand img { width: 56px; height: 56px; border-radius: 12px; }
+.hero h1 { font-size: clamp(44px, 7vw, 76px); letter-spacing: -.01em; }
+.lede { font: 500 clamp(20px, 2.6vw, 25px)/1.35 var(--display); color: var(--star); }
+.hero p.sub { color: #c9ccd6; max-width: 56ch; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+.btn { display: inline-flex; flex-direction: column; justify-content: center; padding: 11px 20px; border-radius: 8px; text-decoration: none; font: 500 16px/1.2 var(--text); border: 1px solid transparent; }
+.btn small { font: 400 12px/1.3 var(--mono); opacity: .8; margin-top: 3px; }
+.btn.primary { background: var(--sol); color: #1a1205; }
+.btn.primary:hover { background: #ffd27a; color: #1a1205; }
+.btn.ghost { border-color: #3a4562; color: var(--star); background: rgba(14,19,34,.6); }
+.btn.ghost:hover { border-color: var(--blue); color: var(--star); }
+.btn.soon { border: 1px dashed #3a4562; color: var(--dim); background: transparent; cursor: default; }
+.hero .more { font-size: 15px; color: var(--dim); }
+.caption-bar { position: relative; z-index: 1; }
+
+/* Facts */
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+.fact { padding: 20px 22px; background: var(--sky-2); display: grid; gap: 4px; }
+.fact + .fact { border-left: 1px solid var(--rule); }
+.fact b { font: 700 30px/1.1 var(--display); color: var(--star); font-variant-numeric: tabular-nums; }
+.fact span { font-size: 14px; color: var(--dim); line-height: 1.4; }
+.facts-sec { padding-block: 8px 56px; border-top: 0; }
+
+/* Origin */
+.origin { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 48px; align-items: start; }
+.origin h2 { font-size: clamp(28px, 3.6vw, 38px); margin-top: 10px; }
+.origin .body { display: grid; gap: 16px; color: #d3d5dc; }
+.formula { font: 400 15px/1.5 var(--mono); color: var(--star); background: var(--sky-2); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px; overflow-x: auto; }
+.formula span { color: var(--dim); display: block; font-size: 12.5px; margin-top: 6px; }
+
+/* Feature rows */
+.rows { display: grid; gap: 72px; }
+.row { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 40px; align-items: center; }
+.row:nth-child(even) .shot { order: 2; }
+.shot { margin: 0; display: grid; gap: 8px; }
+.shot img { width: 100%; border-radius: 8px; border: 1px solid var(--rule); }
+.row .text { display: grid; gap: 12px; }
+.row h3 { font-size: clamp(24px, 2.8vw, 30px); }
+.row p { color: #d3d5dc; }
+.sec-head { display: grid; gap: 10px; margin-bottom: 40px; max-width: 680px; }
+.sec-head h2 { font-size: clamp(30px, 4vw, 42px); }
+.sec-head p { color: var(--dim); }
+
+/* Feature grid */
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; }
+.cell { background: var(--sky); padding: 22px 22px 24px; display: grid; gap: 8px; align-content: start; }
+.cell h3 { font-size: 19px; }
+.cell p { font-size: 15.5px; color: #c4c8d2; line-height: 1.55; }
+
+/* Trailer */
+.trailer video { width: 100%; aspect-ratio: 16 / 9; border-radius: 10px; border: 1px solid var(--rule); background: #000; }
+
+/* Phone gallery */
+.gallery { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, 1fr); gap: 16px; overflow-x: auto; padding-bottom: 10px; scrollbar-color: #3a4562 transparent; }
+.gallery figure { margin: 0; display: grid; gap: 8px; }
+.gallery img { width: 100%; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 14px; border: 1px solid var(--rule); }
+.gallery figcaption { font-size: 14px; color: var(--dim); line-height: 1.4; }
+.gallery figcaption b { color: var(--star); font-weight: 500; display: block; }
+
+/* Platforms */
+.platforms { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.plat { background: var(--sky-2); border: 1px solid var(--rule); border-radius: 10px; padding: 24px; display: grid; gap: 14px; align-content: start; }
+.plat h3 { font-size: 24px; }
+.plat .req { font: 400 13px/1.4 var(--mono); color: var(--dim); }
+.plat ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: #c4c8d2; font-size: 15.5px; }
+.plat .btns { display: grid; gap: 10px; }
+.plat .btn { width: 100%; }
+.release { margin-top: 18px; font-size: 15px; color: var(--dim); }
+
+/* Open source + credits */
+.open { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; }
+.open .body { display: grid; gap: 14px; color: #d3d5dc; align-content: start; }
+.links { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 15.5px; }
+.credits { display: grid; gap: 14px; font-size: 14px; line-height: 1.55; color: #b4bac8; }
+.credits h3 { font: 600 13px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--sol); }
+.credits p b { color: var(--star); font-weight: 500; }
+footer { border-top: 1px solid var(--rule); padding-block: 28px 40px; font-size: 13.5px; color: var(--dim); }
+
+@media (max-width: 860px) {
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fact:nth-child(3) { border-left: 0; }
+  .fact:nth-child(n+3) { border-top: 1px solid var(--rule); }
+  .origin, .row, .open { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .row:nth-child(even) .shot { order: 0; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .platforms { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  body { font-size: 16px; }
+  section { padding-block: 48px; }
+  .hero { min-height: 520px; }
+  .grid { grid-template-columns: minmax(0, 1fr); }
+  .fact b { font-size: 24px; }
+  .btn { flex: 1 1 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero img.bg { animation: drift 60s ease-in-out infinite alternate; }
+  @keyframes drift { from { transform: scale(1.04) translateX(0); } to { transform: scale(1.04) translateX(-2%); } }
+}
+</style>
+</head>
+<body>
+
+<main class="as-page">
+
+<header class="hero">
+  <img class="bg" src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/hero-proxima-b.jpg" alt="The night sky from Proxima Centauri b, with Earth's constellations drawn in and our Sun labelled as a faint star 4.2 light-years away">
+  <div class="wrap">
+    <div class="hero-inner">
+      <div class="brand">
+        <img src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/icon.png" alt="" width="56" height="56">
+        <span class="eyebrow">Free screen saver · Windows · Android · macOS</span>
+      </div>
+      <h1>Alien Skies</h1>
+      <p class="lede">The real night sky, as it looks from planets orbiting other stars.</p>
+      <p class="sub">Stand on Proxima Centauri b, TRAPPIST-1 e or any of 6,446 known exoplanets and look up. Every star is placed from real catalog data and recomputed for the new viewpoint. The sky is computed, not painted.</p>
+      <div class="ctas">
+        <a class="btn primary" href="https://github.com/ctdltd/AlienSkies/releases/download/v26331.0830/AlienSkies-26331.0830.scr" target="_blank" rel="noopener">Download for Windows<small>.scr · 57 MB</small></a>
+        <a class="btn ghost" href="https://github.com/ctdltd/AlienSkies/releases/download/v26331.0830/AlienSkies-26331.0830.apk" target="_blank" rel="noopener">Download for Android<small>.apk · 20 MB</small></a>
+        <span class="btn soon" aria-disabled="true">Google Play<small>coming soon</small></span>
+      </div>
+      <p class="more">Free and open source. No ads, no account, nothing collected. <a href="https://github.com/ctdltd/AlienSkies/releases/tag/v26331.0830" target="_blank" rel="noopener">All downloads on GitHub</a></p>
+    </div>
+  </div>
+</header>
+
+<section class="facts-sec">
+  <div class="wrap">
+    <p class="readout" style="margin-bottom:22px">The sky from Proxima Cen b · orbiting Proxima Cen, 4.2 ly from Earth · Sun (Sol): azimuth 90°, altitude 25° · this light left it 4.2 years ago</p>
+    <div class="facts">
+      <div class="fact"><b>117,444</b><span>real stars, from ESA's Hipparcos catalog</span></div>
+      <div class="fact"><b>6,446</b><span>exoplanets to stand on, from the NASA Exoplanet Archive</span></div>
+      <div class="fact"><b>88</b><span>constellations, to watch them warp with distance</span></div>
+      <div class="fact"><b>3</b><span>platforms, one renderer: Windows, Android, macOS</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap origin">
+    <div>
+      <p class="eyebrow">Origin story</p>
+      <h2>An idea from 2006, finished with help from Gaia</h2>
+    </div>
+    <div class="body">
+      <p>Alien Skies started around 2006 and never got finished. The math was never the hard part. What was missing was a catalog with good distances for enough stars. ESA's Hipparcos and Gaia missions supplied that.</p>
+      <p>Each star's position and distance become a point in 3-D space. Move the viewpoint to another star and every direction and brightness is worked out again. Familiar constellations stretch and break apart, and our own Sun becomes an ordinary star in someone else's sky.</p>
+      <div class="formula">m<sub>new</sub> = M + 5·log<sub>10</sub>(d<sub>new</sub>) − 5<span>A star's true brightness M and its new distance d give how bright it looks from there.</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">What you see</p>
+      <h2>Real places, real orbits, real light</h2>
+    </div>
+    <div class="rows">
+      <div class="row">
+        <figure class="shot">
+          <img src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/sol-from-proxima.jpg" alt="Starfield from Proxima Centauri b with our Sun marked: Sun (Sol), 4.2 light-years, magnitude 0.4" loading="lazy">
+          <figcaption class="readout">Proxima Centauri b · Sun (Sol) 4.2 ly · mag 0.4</figcaption>
+        </figure>
+        <div class="text">
+          <p class="eyebrow">Our Sun, labelled</p>
+          <h3>Find home in someone else's sky</h3>
+          <p>Sol is marked with its distance and brightness. The info line tells you where to look for it and how many years ago the light you're seeing left it. When it's out of view, an arrow at the edge of the screen shows which way to turn.</p>
+        </div>
+      </div>
+      <div class="row">
+        <figure class="shot">
+          <img src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/kepler16-eclipse.jpg" alt="Kepler-16's two suns eclipsing each other in a daytime sky" loading="lazy">
+          <figcaption class="readout">Kepler-16 b · second sun Kepler-16 B, 0.5 AU away</figcaption>
+        </figure>
+        <div class="text">
+          <p class="eyebrow">Two suns</p>
+          <h3>Binary stars on their real orbits</h3>
+          <p>In a binary system the second star is a second sun. From a planet of α Centauri A, Toliman swings between 36 AU and 11 AU over its 80-year orbit. Circumbinary worlds like Kepler-16 b circle both stars at once, see double sunsets every few weeks, and watch the suns eclipse each other.</p>
+        </div>
+      </div>
+      <div class="row">
+        <figure class="shot">
+          <img src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/trappist-1e.jpg" alt="TRAPPIST-1 glowing red on the horizon of TRAPPIST-1 e under a dense starfield" loading="lazy">
+          <figcaption class="readout">TRAPPIST-1 e · orbit 0.029 AU / 6.1 d · tidally locked</figcaption>
+        </figure>
+        <div class="text">
+          <p class="eyebrow">A living planet</p>
+          <h3>Worlds that keep one face to their star</h3>
+          <p>Each planet follows its real Keplerian orbit and spins on its axis. On a tidally locked world the sun stays put while the stars wheel past once per orbit, with the small wobble an eccentric orbit causes. The system's other planets wander across the sky too. In TRAPPIST-1 they come close enough to show a disc with phases.</p>
+        </div>
+      </div>
+      <div class="row">
+        <figure class="shot">
+          <img src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/milky-way.jpg" alt="The Milky Way band with its dark Great Rift, seen from α Centauri A, with Deneb, Vega and Altair labelled" loading="lazy">
+          <figcaption class="readout">α Cen A · detailed Milky Way style</figcaption>
+        </figure>
+        <div class="text">
+          <p class="eyebrow">The Milky Way</p>
+          <h3>Our galaxy, from over there</h3>
+          <p>From nearby stars the Milky Way looks almost exactly as it does from Earth. From distant systems it shifts by parallax. A soft tint keeps it light on phones, and the detailed style adds the bulge's star clouds, the dark Great Rift and the Magellanic Clouds.</p>
+        </div>
+      </div>
+      <div class="row">
+        <figure class="shot">
+          <img src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/tour-flight.jpg" alt="Mid-flight view toward TRAPPIST-1, 20.85 of 41.69 light-years to go, with constellations reshaping" loading="lazy">
+          <figcaption class="readout">Flying from α Cen A to TRAPPIST-1 e · 20.85 of 41.69 ly to go</figcaption>
+        </figure>
+        <div class="text">
+          <p class="eyebrow">Tour mode</p>
+          <h3>Fly between the stars</h3>
+          <p>Tour mode visits a random planet and a random spot on its surface at an interval you choose. It flies there: the ground falls away, the view turns toward the destination star, and every star is re-projected from the moving viewpoint, so Earth's constellations reshape as you cross the gap.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">And more</p>
+      <h2>Made to run for hours</h2>
+    </div>
+    <div class="grid">
+      <div class="cell"><h3>Earth's constellations, distorted</h3><p>Draw all 88 constellation figures and watch them stretch and break apart with distance.</p></div>
+      <div class="cell"><h3>Local planet time</h3><p>The info overlay names the world and its star, shows your position and orbit, and gives the local solar time where you stand.</p></div>
+      <div class="cell"><h3>Imaginary planets</h3><p>Put your own planet around any named star. Its orbit and day length are worked out from the star's brightness and colour.</p></div>
+      <div class="cell"><h3>Day and night</h3><p>When the sun is up the sky brightens and fainter stars wash out. Switch the atmosphere off for an airless world.</p></div>
+      <div class="cell"><h3>Your spot on the ground</h3><p>Pick latitude, longitude and the direction you face. On a locked world, 90° longitude is an endless sunset.</p></div>
+      <div class="cell"><h3>Multi-monitor panorama</h3><p>Each extra screen continues the view to the right instead of repeating it.</p></div>
+      <div class="cell"><h3>Live wallpaper</h3><p>On Android it is also a live wallpaper. Swiping between home screens pans across the horizon.</p></div>
+      <div class="cell"><h3>Burn-in safe</h3><p>The info overlay drifts slowly along the bottom of the screen so nothing stays in one place.</p></div>
+      <div class="cell"><h3>Time at any speed</h3><p>Run in real time, or speed up to watch one Earth day pass every 2.4 minutes.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="trailer">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Trailer · 52 seconds</p>
+      <h2>See it move</h2>
+    </div>
+    <video controls preload="none" playsinline poster="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/trailer-poster.jpg">
+      <source src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/video/alien-skies-trailer.mp4" type="video/mp4">
+      <a href="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/video/alien-skies-trailer.mp4" target="_blank" rel="noopener">Watch the trailer</a>
+    </video>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">On a phone</p>
+      <h2>Screenshots</h2>
+    </div>
+    <div class="gallery">
+      <figure><img src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/phone-proxima-b.jpg" alt="Proxima Centauri b night sky with the Milky Way and Sol labelled" loading="lazy"><figcaption><b>Proxima Centauri b</b>Our Sun, 4.2 light-years away</figcaption></figure>
+      <figure><img src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/phone-mu-leo-b.jpg" alt="Orion stretched out of shape as seen from mu Leonis b" loading="lazy"><figcaption><b>μ Leonis b</b>Orion, 106 light-years from home</figcaption></figure>
+      <figure><img src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/phone-tau-ceti.jpg" alt="Night sky from an imaginary planet around Tau Ceti" loading="lazy"><figcaption><b>Tau Ceti</b>An imaginary planet of your own</figcaption></figure>
+      <figure><img src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/phone-alf-cen.jpg" alt="Daytime sky from a planet around Toliman with a second sun" loading="lazy"><figcaption><b>Toliman</b>A second sun in the daytime sky</figcaption></figure>
+      <figure><img src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/phone-trappist-1e.jpg" alt="TRAPPIST-1 sitting on the horizon of a tidally locked world" loading="lazy"><figcaption><b>TRAPPIST-1 e</b>An endless red sunset</figcaption></figure>
+      <figure><img src="https://raw.githubusercontent.com/ctdltd/AlienSkies/main/docs/site/img/phone-eps-eri-b.jpg" alt="Sunset sky on epsilon Eridani b" loading="lazy"><figcaption><b>ε Eridani b</b>Sunset, 10.4 light-years out</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="download">
+  <div class="wrap">
+    <div class="sec-head">
+      <p class="eyebrow">Get it</p>
+      <h2>Free on every screen you own</h2>
+    </div>
+    <div class="platforms">
+      <div class="plat">
+        <h3>Windows</h3>
+        <p class="req">Windows 10 or 11 · x64</p>
+        <ul>
+          <li>Self-contained: nothing else to install</li>
+          <li>Right-click the .scr and choose Install</li>
+          <li>Continuous panorama across monitors</li>
+        </ul>
+        <div class="btns">
+          <a class="btn primary" href="https://github.com/ctdltd/AlienSkies/releases/download/v26331.0830/AlienSkies-26331.0830.scr" target="_blank" rel="noopener">Download .scr<small>57 MB</small></a>
+          <a class="btn ghost" href="https://github.com/ctdltd/AlienSkies/releases/download/v26331.0830/AlienSkies-26331.0830-windows.zip" target="_blank" rel="noopener">Download .zip<small>52 MB</small></a>
+        </div>
+      </div>
+      <div class="plat">
+        <h3>Android</h3>
+        <p class="req">Android 8.0 or later · phones, tablets, TV</p>
+        <ul>
+          <li>Screen saver while charging or docked</li>
+          <li>Live wallpaper that pans as you swipe</li>
+          <li>No internet permission at all</li>
+        </ul>
+        <div class="btns">
+          <span class="btn soon" aria-disabled="true">Google Play<small>coming soon</small></span>
+          <a class="btn ghost" href="https://github.com/ctdltd/AlienSkies/releases/download/v26331.0830/AlienSkies-26331.0830.apk" target="_blank" rel="noopener">Download .apk<small>20 MB · install directly</small></a>
+        </div>
+      </div>
+      <div class="plat">
+        <h3>macOS</h3>
+        <p class="req">Apple silicon and Intel</p>
+        <ul>
+          <li>A real screen saver in System Settings</li>
+          <li>Same sky and settings as Windows and Android</li>
+          <li>No .NET runtime needed</li>
+        </ul>
+        <div class="btns">
+          <span class="btn soon" aria-disabled="true">Download<small>coming soon</small></span>
+          <a class="btn ghost" href="https://github.com/ctdltd/AlienSkies#macos" target="_blank" rel="noopener">Build from source<small>instructions on GitHub</small></a>
+        </div>
+      </div>
+    </div>
+    <p class="release">Current release 26331.0830. <a href="https://github.com/ctdltd/AlienSkies/releases" target="_blank" rel="noopener">Release notes and older versions</a></p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap open">
+    <div class="body">
+      <p class="eyebrow">Free and open source</p>
+      <h2 style="font-size:clamp(28px,3.6vw,38px)">Yours to use, study and share</h2>
+      <p>Alien Skies is free software under the GNU General Public License, version 3 or later. There are no ads, no accounts and no tracking. The app collects nothing, and the Android version doesn't even ask for internet access.</p>
+      <div class="links">
+        <a href="https://github.com/ctdltd/AlienSkies" target="_blank" rel="noopener">Source code</a>
+        <a href="https://github.com/ctdltd/AlienSkies/blob/main/LICENSE" target="_blank" rel="noopener">License (GPL-3.0)</a>
+        <a href="https://www.certificationtoolanddie.com/alien-skies/privacy-policy" target="_top">Privacy policy</a>
+        <a href="https://github.com/ctdltd/AlienSkies/blob/main/THIRD-PARTY-NOTICES.md" target="_blank" rel="noopener">Third-party notices</a>
+        <a href="https://github.com/ctdltd/AlienSkies/issues" target="_blank" rel="noopener">Report a problem</a>
+      </div>
+    </div>
+    <div class="credits">
+      <h3>Data and credits</h3>
+      <p><b>ESA, Gaia DPAC.</b> This work has made use of data from the European Space Agency (ESA) mission <a href="https://www.cosmos.esa.int/gaia" target="_blank" rel="noopener">Gaia</a>, processed by the Gaia Data Processing and Analysis Consortium (<a href="https://www.cosmos.esa.int/web/gaia/dpac/consortium" target="_blank" rel="noopener">DPAC</a>). Funding for the DPAC has been provided by national institutions, in particular the institutions participating in the Gaia Multilateral Agreement.</p>
+      <p><b>ESA Hipparcos mission.</b> ESA 1997, <i>The Hipparcos and Tycho Catalogues</i>, ESA SP-1200, with parallaxes from the new reduction by F. van Leeuwen (2007, A&amp;A 474, 653).</p>
+      <p><b>VizieR.</b> This research has made use of the VizieR catalogue access tool, CDS, Strasbourg, France (DOI: 10.26093/cds/vizier).</p>
+      <p><b>NASA Exoplanet Archive.</b> This research has made use of the NASA Exoplanet Archive, which is operated by the California Institute of Technology, under contract with the National Aeronautics and Space Administration under the Exoplanet Exploration Program.</p>
+      <p><b>Stellarium.</b> Constellation figures from Stellarium's modern sky culture, © the Stellarium team, <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.</p>
+      <p><b>HYG database</b> v4.0, © David Nash, CC BY-SA 4.0. <b>SkiaSharp</b> and Skia (MIT, BSD-3-Clause). Portions of this software are copyright © The FreeType Project (www.freetype.org). All rights reserved.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">© 2026 Certification Tool and Die Ltd. Co. Alien Skies is free software, distributed without any warranty under the GNU GPL v3 or later.</div>
+</footer>
+
+</main>
+
+</body>
+</html>
