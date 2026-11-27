@@ -130,6 +130,10 @@ public sealed class SaverSettings
     [Description("1 = a dark country sky. Lower it for a subtler band, raise it (up to 3) for a long-exposure look.")]
     public double MilkyWayBrightness { get; set; } = 1.0;
 
+    [Category("4. View"), DisplayName("Milky Way style")]
+    [Description("Soft tint shades where the band is, brighter towards its middle, and is cheap enough for phones. Detailed adds the dust lanes and star clouds but costs several times as much per frame.")]
+    public MilkyWayStyle MilkyWayStyle { get; set; } = MilkyWayStyle.Tint;
+
     [Category("4. View"), DisplayName("Show sibling planets")]
     [Description("Show the other planets of the same system as bright wandering points, with their phases when they are close enough to show a disc.")]
     public bool ShowSiblingPlanets { get; set; } = true;

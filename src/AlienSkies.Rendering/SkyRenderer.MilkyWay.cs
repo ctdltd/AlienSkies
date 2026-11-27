@@ -33,6 +33,11 @@ public sealed partial class SkyRenderer
     {
         double opacity = System.Math.Clamp(s.MilkyWayBrightness, 0, 3) * 0.5 * System.Math.Pow(1 - day, 3);
         if (opacity < 0.01 || size.Width < 2 || size.Height < 2) return;
+        if (s.MilkyWayStyle == MilkyWayStyle.Tint)
+        {
+            DrawMilkyWayTint(canvas, size, scene, horizon, s, azimuthDeg, opacity);
+            return;
+        }
 
         if (_milkyWay is null || !ReferenceEquals(_milkyWay.Sky, scene.Sky))
             _milkyWay = new MilkyWayMesh(scene.Sky, scene.HostPositionParsecs);
@@ -93,9 +98,42 @@ public sealed partial class SkyRenderer
         }
 
         using var image = _milkyWaySurface.Snapshot();
-        canvas.DrawImage(image, new SKRect(0, 0, size.Width, size.Height),
-            new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None));
+        DrawUpscaled(canvas, size, image, opaque: false);
     }
+
+    private SKSurface? _upscaleSurface;
+
+    /// <summary>
+    /// Stretches a small image over the whole canvas. Skia's CPU bilinear stretch is slow at full HD (~8-12 ms), so
+    /// it is filtered up to half resolution first and then doubled with nearest sampling, which costs about a third
+    /// as much. The band's colours vary over many pixels, so the 2x2 blocks don't show.
+    /// </summary>
+    private void DrawUpscaled(SKCanvas canvas, SKSizeI size, SKImage image, bool opaque)
+    {
+        var full = new SKRect(0, 0, size.Width, size.Height);
+        var half = new SKSizeI((size.Width + 1) / 2, (size.Height + 1) / 2);
+        if (image.Width * 2 > half.Width * 3 || half.Width < 2 || half.Height < 2)
+        {
+            canvas.DrawImage(image, full, new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None));
+            return;
+        }
+        var alpha = opaque ? SKAlphaType.Opaque : SKAlphaType.Premul;
+        if (_upscaleSurface is null || _upscaleInfo.Width != half.Width || _upscaleInfo.Height != half.Height ||
+            _upscaleInfo.AlphaType != alpha)
+        {
+            _upscaleSurface?.Dispose();
+            _upscaleInfo = new SKImageInfo(half.Width, half.Height, SKImageInfo.PlatformColorType, alpha);
+            _upscaleSurface = SKSurface.Create(_upscaleInfo);
+            if (_upscaleSurface is null) return;
+        }
+        var mid = _upscaleSurface.Canvas;
+        if (!opaque) mid.Clear(SKColors.Transparent);
+        mid.DrawImage(image, new SKRect(0, 0, half.Width, half.Height), new SKSamplingOptions(SKFilterMode.Linear, SKMipmapMode.None));
+        using var midImage = _upscaleSurface.Snapshot();
+        canvas.DrawImage(midImage, full, new SKSamplingOptions(SKFilterMode.Nearest, SKMipmapMode.None));
+    }
+
+    private SKImageInfo _upscaleInfo;
 
     private static SKImage BuildMilkyWayTexture()
     {

@@ -10,8 +10,10 @@
     <AssemblyName>AlienSkies.Android</AssemblyName>
     <ApplicationId>com.certificationtoolanddie.alienskies</ApplicationId>
     <ApplicationTitle>Alien Skies</ApplicationTitle>
-    <ApplicationVersion>1</ApplicationVersion>
-    <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
+    <!-- Display version = the release number (YYddd.hhmm, see Directory.Build.props); Play's version code is the same
+         digits without the dot, e.g. 26331.0510 -> 263310510, which always grows and stays under Play's 2,100,000,000. -->
+    <ApplicationDisplayVersion>$(AlienSkiesStamp)</ApplicationDisplayVersion>
+    <ApplicationVersion>$(AlienSkiesStamp.Replace('.', ''))</ApplicationVersion>
     <!-- Build an installable APK (sideload) as well as the Play Store bundle. -->
     <AndroidPackageFormats>apk;aab</AndroidPackageFormats>
   </PropertyGroup>

@@ -6,6 +6,13 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <Company>Certification Tool and Die, Ltd.</Company>
     <Product>Alien Skies</Product>
-    <Version>0.1.0</Version>
+    <!-- Release number YYddd.hhmm: two-digit year, day of the year (001-366), then the local hour and minute of the
+         build, e.g. 26331.0510. Release builds stamp it automatically; pass -p:AlienSkiesStamp=26331.0510 to pin it
+         (say, to give every platform the same number). Debug builds keep a fixed number so they stay incremental. -->
+    <AlienSkiesStamp Condition="'$(AlienSkiesStamp)' == '' and '$(Configuration)' == 'Release'">$([System.DateTime]::Now.ToString('yy'))$([System.DateTime]::Now.DayOfYear.ToString('000')).$([System.DateTime]::Now.ToString('HHmm'))</AlienSkiesStamp>
+    <AlienSkiesStamp Condition="'$(AlienSkiesStamp)' == ''">1.0</AlienSkiesStamp>
+    <!-- .NET reads 26331.0510 as 26331.510 for the assembly and file versions; the informational version keeps the text. -->
+    <Version>$(AlienSkiesStamp)</Version>
+    <InformationalVersion>$(AlienSkiesStamp)</InformationalVersion>
   </PropertyGroup>
 </Project>
