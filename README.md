@@ -74,6 +74,7 @@ Build the screen saver file:
 ```powershell
 ./publish.ps1                 # small; needs the .NET 10 Desktop Runtime
 ./publish.ps1 -SelfContained  # larger; runs on any Windows x64 machine
+./publish.ps1 -SelfContained -Stamp 26331.0718  # pin the release number (default: build time)
 ```
 
 This produces `artifacts\AlienSkies.scr`. Right-click it and choose **Install**, or copy it to `C:\Windows\System32` (needs admin) so it appears in **Settings → Personalization → Lock screen → Screen saver**.
@@ -230,7 +231,7 @@ tools/build_catalog.sh --gaia-limit 10  # also add Gaia DR3 stars down to magnit
 cp data-out/*.csv "/mnt/c/Users/$USER/AppData/Roaming/AlienSkies/data/"
 ```
 
-The Windows saver looks for each file in `%APPDATA%\AlienSkies\data`, then in a `data` folder next to the executable, and finally falls back to the embedded sample. The **Open data folder** link in the settings dialog takes you straight there.
+The Windows saver looks for each file in `%APPDATA%\AlienSkies\data`, then in a `data` folder next to the executable, then in the full catalogs embedded at build time from `src/AlienSkies.Android/Assets/data/` (the same files the APK bundles), and finally falls back to the embedded sample. The **Open data folder** link in the settings dialog takes you straight there.
 
 For Android, copy the CSVs into `src/AlienSkies.Android/Assets/data/` before building, and they're bundled into the APK. The app looks in its private storage first, then in those bundled assets, and finally falls back to the embedded sample. The full Hipparcos catalog adds a few megabytes to the APK.
 
