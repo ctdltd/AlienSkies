@@ -113,7 +113,7 @@ Reproduce with `--planet "Kepler-16 b" --days 10.775 --az 264 --alt 9 --fov 60` 
 * Highlight the planet's ecliptic, celestial equator, and pole star
 
 **Screen saver UX**
-* Tour mode with a cinematic flight between systems (stars stream past)
+* Tour mode with a cinematic flight between systems (done: `Core/Travel` re-projects every star from the moving viewpoint; see below)
 * Choose systems by filter: habitable zone, within N light-years, transiting only
 * "What can they see?" mode: show whether Earth would transit the Sun as seen from that planet
 * Per-monitor modes: one panorama, or a different planet on each screen
@@ -122,3 +122,20 @@ Reproduce with `--planet "Kepler-16 b" --days 10.775 --az 264 --alt 9 --fov 60` 
 * GPU rendering (SkiaSharp's GL backend)
 * macOS `.saver` reusing the SkiaSharp renderer (done: Objective-C `ScreenSaverView` plus the shared code as a NativeAOT dylib; see `src/AlienSkies.Mac`)
 * Android: a daylight-aware dim mode for bedside docks
+
+## Flights between systems
+
+Tour mode can fly to each new planet instead of cutting to it (`TourFlights`, on by default). The pieces:
+
+* `Core/Travel/FlightTimeline` is pure timing over progress u ∈ [0, 1]: lift-off (the surface dissolves), turn-out (the
+  camera swings to face the destination), cruise (smooth start and stop along a straight line), turn-in, landing. Every
+  curve is continuous, and the viewpoint never moves while the ground is visible or the camera is turning.
+* `Core/Travel/FlightSky` holds the catalog plus both hosts, their companions and Sol as positions, and re-projects all of
+  them for any viewpoint each frame (direction and inverse-square brightness). The optional near-light-speed look adds
+  relativistic aberration and a Doppler tint, at a purely visual top speed of 0.6 c.
+* `Rendering/TourFlight` holds the departure and arrival scenes (sharing the tour's clock, so both skies keep turning)
+  and the progress; `SkyScene.Tick` advances it and swaps in the arrival planet on landing.
+* `SkyRenderer.Flight.cs` draws it. At both ends the flight camera equals the surface camera and `FlightSky` agrees with
+  that planet's `AlienSky`, so the surface view is simply drawn on top at the dissolve's opacity, with no jump.
+
+`tools/AlienSkies.Preview --to <planet> --frames N` renders a flight as a numbered frame sequence, and CI uploads one.

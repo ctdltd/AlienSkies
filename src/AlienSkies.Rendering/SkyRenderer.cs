@@ -27,6 +27,14 @@ public sealed partial class SkyRenderer : IDisposable
     public void Draw(SKCanvas canvas, SKSizeI size, SkyScene scene, SaverSettings s,
                      double azimuthOffsetDeg = 0, float density = 1f)
     {
+        if (scene.Flight is { } flight) DrawFlight(canvas, size, flight, s, azimuthOffsetDeg, density);
+        else DrawSurface(canvas, size, scene, s, azimuthOffsetDeg, density);
+    }
+
+    /// <summary>The view from a planet's surface (everything except flights).</summary>
+    private void DrawSurface(SKCanvas canvas, SKSizeI size, SkyScene scene, SaverSettings s,
+                             double azimuthOffsetDeg, float density)
+    {
         double t = scene.TimeDays;
         var horizon = scene.Frame.Horizon(t);
         var planetOffset = scene.Frame.PlanetOffsetAu(t);

@@ -26,6 +26,12 @@ GAIA_TAP = "https://gea.esac.esa.int/tap-server/tap"
 NASA_TAP = "https://exoplanetarchive.ipac.caltech.edu/TAP"
 
 SAMPLE_STARS = Path(__file__).resolve().parents[1] / "src" / "AlienSkies.Core" / "Data" / "stars.csv"
+SAMPLE_PLANETS = SAMPLE_STARS.with_name("exoplanets.csv")
+
+# Parallax overrides (mas). Hipparcos fits alpha Centauri A and B separately and puts them
+# 0.07 pc apart along the line of sight, so they would not be linked as companions (second suns).
+# Use the joint system parallax of Kervella et al. 2016 (A&A 594, A107) for both.
+PLX_OVERRIDES = {71683: 747.17, 71681: 747.17}
 
 
 def sample_names() -> dict[str, str]:
@@ -53,6 +59,7 @@ def hipparcos() -> list[dict]:
         if hip not in plx or _masked(r["Vmag"]) or _masked(r["RAICRS"]):
             continue
         p, ep = plx[hip]
+        p = PLX_OVERRIDES.get(hip, p)
         if p <= 0:
             continue
         rows.append({
@@ -106,6 +113,14 @@ def exoplanets() -> list[dict]:
     for r in table:
         rows.append({c: "" if _masked(r[c]) else str(r[c]).replace(",", " ") for c in cols.split(",")})
     print(f"  {len(rows):,} planets")
+    # Keep the sample's hypothetical planets (the default "alf Cen A (hypothetical Earth)" among them),
+    # which the archive does not list.
+    with SAMPLE_PLANETS.open() as f:
+        extra = [r for r in csv.DictReader(line for line in f if not line.startswith("#"))
+                 if "hypothetical" in r["pl_name"].lower()]
+    known = {r["pl_name"] for r in rows}
+    rows = [r for r in extra if r["pl_name"] not in known] + rows
+    print(f"  + {len(extra)} hypothetical planet(s) from the bundled sample")
     return rows
 
 
