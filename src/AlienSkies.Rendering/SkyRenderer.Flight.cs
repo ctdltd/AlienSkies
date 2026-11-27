@@ -42,7 +42,7 @@ public sealed partial class SkyRenderer
             }
         }
         DrawFlightStars(canvas, flight, seen, view, cam, s, limit, density);
-        if (s.ShowInfo && space > 0) DrawFlightInfo(canvas, size, flight, path, seen, view, cam, space, density);
+        if (s.ShowInfo && space > 0) DrawFlightInfo(canvas, size, flight, path, seen, view, cam, space, s.DriftInfo, density);
 
         // Lift-off and landing: the surface view, drawn with the very same camera, fading over the space view.
         double surface = 1 - space;
@@ -116,7 +116,7 @@ public sealed partial class SkyRenderer
     }
 
     private void DrawFlightInfo(SKCanvas canvas, SKSizeI size, TourFlight flight, FlightPath path, ReadOnlySpan<SeenStar> seen,
-                                HorizonBasis view, Camera cam, double opacity, float density)
+                                HorizonBasis view, Camera cam, double opacity, bool drift, float density)
     {
         byte a = (byte)Math.Round(opacity * 255);
         using var font = new SKFont(_typeface, 13 * density);
@@ -147,10 +147,11 @@ public sealed partial class SkyRenderer
         if (widest > maxWidth) font.Size *= maxWidth / widest;
 
         _fill.Color = new SKColor(210, 215, 225, (byte)(160 * opacity));
-        float y = size.Height - 16 * density - (lines.Length - 1) * font.Spacing;
+        var (x, lift) = OverlayDrift(size, lines.Max(l => font.MeasureText(l)), density, drift);
+        float y = size.Height - 16 * density - lift - (lines.Length - 1) * font.Spacing;
         foreach (var line in lines)
         {
-            canvas.DrawText(line, 16 * density, y, SKTextAlign.Left, font, _fill);
+            canvas.DrawText(line, x, y, SKTextAlign.Left, font, _fill);
             y += font.Spacing;
         }
     }

@@ -200,10 +200,13 @@ Settings live in `%APPDATA%\AlienSkies\settings.json` on Windows (in the app's p
 | | Limiting magnitude, star size | 6.5 ≈ a dark sky to the naked eye |
 | | Star colour boost | 1 = true black-body colours (subtle), 1.5 by default, up to 3 for a long-exposure look |
 | | Atmosphere / daylight, ground | |
+| | Stars in daylight | 0.8 by default: most stars stay visible over the daytime sky; 0 = realistic wash-out, 1 = all of them |
 | | Milky Way, Milky Way brightness | 1 = a dark country sky, up to 3 for a long-exposure look |
 | | Milky Way style | Soft tint (default, fast) or detailed (dust lanes and star clouds; several times the drawing cost) |
+| | Orbital plane (ecliptic) | A faint dashed line along the planet's orbit, where its sun and sibling planets travel |
 | | Sibling planets | The system's other planets as wandering points |
-| | Earth's constellations, star labels, mark our Sun, info overlay | |
+| | Earth's constellations, star labels, mark our Sun, info overlay | The overlay includes the local solar time where you stand |
+| | Drift info overlay | Slowly moves the overlay along the bottom of the screen to prevent burn-in (on by default) |
 | **Time** | Time scale, start time | 600× = one Earth day every 2.4 minutes |
 | **Tour** | Tour mode, interval | Random planet and random spot on its surface |
 | | Include imaginary planets | Lets the tour visit your imaginary planets too |

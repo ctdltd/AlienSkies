@@ -115,6 +115,10 @@ public sealed class SaverSettings
     [Description("Brighten the sky and wash out stars when the host star is up. Off = airless moon.")]
     public bool Atmosphere { get; set; } = true;
 
+    [Category("4. View"), DisplayName("Stars in daylight")]
+    [Description("How many stars stay visible when a sun lights the sky. 0 = realistic: daylight washes them all out. 1 = the whole night sky stays, drawn over the blue. In between keeps the brighter ones.")]
+    public double StarsInDaylight { get; set; } = 0.8;
+
     [Category("4. View"), DisplayName("Show ground")]
     public bool ShowGround { get; set; } = true;
 
@@ -134,6 +138,10 @@ public sealed class SaverSettings
     [Description("Soft tint shades where the band is, brighter towards its middle, and is cheap enough for phones. Detailed adds the dust lanes and star clouds but costs several times as much per frame.")]
     public MilkyWayStyle MilkyWayStyle { get; set; } = MilkyWayStyle.Tint;
 
+    [Category("4. View"), DisplayName("Show orbital plane (ecliptic)")]
+    [Description("A faint line across the sky along this planet's orbit, its ecliptic. Its sun, and usually its sibling planets, travel along it.")]
+    public bool ShowOrbitPlane { get; set; } = true;
+
     [Category("4. View"), DisplayName("Show sibling planets")]
     [Description("Show the other planets of the same system as bright wandering points, with their phases when they are close enough to show a disc.")]
     public bool ShowSiblingPlanets { get; set; } = true;
@@ -148,6 +156,10 @@ public sealed class SaverSettings
     [Category("4. View"), DisplayName("Show info overlay")]
     [Description("Planet name, distance from Earth, the suns, the sibling planets, and where our Sun is, with an arrow at the screen edge when it is out of view.")]
     public bool ShowInfo { get; set; } = true;
+
+    [Category("4. View"), DisplayName("Drift info overlay")]
+    [Description("Slowly move the info text around the bottom of the screen so it doesn't burn into OLED or plasma screens left on for hours.")]
+    public bool DriftInfo { get; set; } = true;
 
     // ---- Time --------------------------------------------------------------
     [Category("5. Time"), DisplayName("Time scale (×)")]

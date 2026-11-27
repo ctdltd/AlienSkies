@@ -60,12 +60,18 @@ public sealed partial class SkyRenderer : IDisposable
             }
         }
         canvas.Clear(Lerp(NightSky, Lerp(DaySky, skyTint, 0.35), day));
-        double limit = s.LimitingMagnitude - day * (s.LimitingMagnitude + 3.5); // daylight washes stars out
+        // Daylight washes stars out. "Stars in daylight" holds back part of that wash, for the stars only:
+        // the sky itself still brightens, so the stars show over a blue sky.
+        double starDay = day * (1 - Math.Clamp(s.StarsInDaylight, 0, 1));
+        double limit = s.LimitingMagnitude - starDay * (s.LimitingMagnitude + 3.5);
 
         var cam = new Camera(size, s.ViewAzimuthDeg + azimuthOffsetDeg, s.ViewAltitudeDeg, s.FieldOfViewDeg);
 
         if (s.ShowMilkyWay) DrawMilkyWay(canvas, size, scene, horizon, s, s.ViewAzimuthDeg + azimuthOffsetDeg, day);
-        if (s.ShowConstellations) DrawConstellations(canvas, scene, horizon, cam, s, day, density);
+        // Stars kept through daylight need to stand out against a blue sky, not blend into it.
+        _daylightStarBoost = (float)Math.Max(0, day - starDay);
+        if (s.ShowOrbitPlane) DrawOrbitPlane(canvas, scene, horizon, cam, starDay, density);
+        if (s.ShowConstellations) DrawConstellations(canvas, scene, horizon, cam, s, starDay, density);
         DrawStars(canvas, scene, horizon, cam, s, limit, density);
         if (s.ShowSiblingPlanets) DrawSiblings(canvas, scene, horizon, cam, s, planetOffset, limit, density);
         else _siblingSightings.Clear();
@@ -79,7 +85,7 @@ public sealed partial class SkyRenderer : IDisposable
         if (s.ShowGround) DrawGround(canvas, cam, size, day);
         if (s.ShowInfo)
         {
-            float infoTop = DrawInfo(canvas, size, scene, horizon, suns, s.MarkSol, density);
+            float infoTop = DrawInfo(canvas, size, scene, horizon, suns, s.MarkSol, s.DriftInfo, density);
             if (s.MarkSol) DrawSolPointer(canvas, size, scene, horizon, cam, infoTop, density);
         }
     }
@@ -101,7 +107,18 @@ public sealed partial class SkyRenderer : IDisposable
             {
                 float r = (float)Math.Clamp((0.7 + (limit - star.ApparentMagnitude) * 0.45) * s.StarScale, 0.6, 7) * density;
                 byte alpha = (byte)Math.Clamp((limit - star.ApparentMagnitude + 0.6) / 2.5 * 255, 60, 255);
-                _fill.Color = BvToColor(star.ColorBV, s.ColorBoost).WithAlpha(alpha);
+                var color = BvToColor(star.ColorBV, s.ColorBoost);
+                if (_daylightStarBoost > 0)
+                {
+                    // On a bright sky: whiter, more opaque and a touch larger, with a darker rim so faint ones still read.
+                    float k = _daylightStarBoost;
+                    color = Lerp(color, SKColors.White, 0.5 * k);
+                    alpha = (byte)(alpha + (255 - alpha) * k);
+                    r *= 1 + 0.35f * k;
+                    _fill.Color = new SKColor(20, 30, 60, (byte)(70 * k));
+                    canvas.DrawCircle(p, r + 1.2f * density, _fill);
+                }
+                _fill.Color = color.WithAlpha(alpha);
                 canvas.DrawCircle(p, r, _fill);
             }
 
@@ -125,10 +142,14 @@ public sealed partial class SkyRenderer : IDisposable
         }
     }
 
+    private float _daylightStarBoost;
+
     private void DrawConstellations(SKCanvas canvas, SkyScene scene, HorizonBasis horizon, Camera cam,
                                     SaverSettings s, double day, float density)
     {
-        _stroke.Color = new SKColor(110, 150, 220, (byte)(90 * (1 - day)));
+        // Blue figures vanish on a blue sky, so they turn pale as kept-through-daylight stars do.
+        _stroke.Color = Lerp(new SKColor(110, 150, 220), new SKColor(235, 240, 255), _daylightStarBoost)
+            .WithAlpha((byte)(90 * (1 - day) + 70 * _daylightStarBoost));
         _stroke.StrokeWidth = 1f * density;
         foreach (var (_, fromId, toId) in scene.ConstellationLines)
         {
@@ -180,7 +201,7 @@ public sealed partial class SkyRenderer : IDisposable
 
     /// <returns>The top of the text block, so other overlay pieces can keep clear of it.</returns>
     private float DrawInfo(SKCanvas canvas, SKSizeI size, SkyScene scene, HorizonBasis horizon,
-                          IReadOnlyList<Sun> suns, bool markSol, float density)
+                          IReadOnlyList<Sun> suns, bool markSol, bool drift, float density)
     {
         var c = scene.Config;
         var p = scene.Sky.Planet;
@@ -189,7 +210,7 @@ public sealed partial class SkyRenderer : IDisposable
         {
             $"The sky from {(p.IsImaginary && !p.PlanetName.Contains("imaginary", StringComparison.OrdinalIgnoreCase) ? "imaginary " : "")}{p.PlanetName}  ·  orbiting {p.HostName}, {scene.DistanceFromEarthLy:0.#} ly from Earth",
             $"Lat {c.LatitudeDeg:0.#}°  Lon {c.LongitudeDeg:0.#}°  ·  orbit {c.SemiMajorAxisAu:0.###} AU / {c.OrbitalPeriodDays:0.##} d  ·  {spin}  ·  " +
-            $"{suns[0].Name} at {suns[0].Altitude / Units.Deg:0}° altitude, mag {suns[0].Magnitude:0.0}",
+            $"{LocalTimeText(scene, horizon, suns[0])}  ·  {suns[0].Name} at {suns[0].Altitude / Units.Deg:0}° altitude, mag {suns[0].Magnitude:0.0}",
         };
         if (scene.Sky.IsSparse)
             lines.Add("Far from Earth: our star catalogs miss many of the stars near here, so this sky looks emptier than it is");
@@ -212,11 +233,12 @@ public sealed partial class SkyRenderer : IDisposable
         if (widest > maxWidth) font.Size *= 0.97f * maxWidth / widest; // a little slack: glyph metrics do not scale exactly
 
         _fill.Color = new SKColor(210, 215, 225, 160);
-        float y = size.Height - 16 * density - (lines.Count - 1) * font.Spacing;
+        var (x, lift) = OverlayDrift(size, lines.Max(l => font.MeasureText(l)), density, drift);
+        float y = size.Height - 16 * density - lift - (lines.Count - 1) * font.Spacing;
         float top = y - font.Size;
         foreach (var line in lines)
         {
-            canvas.DrawText(line, 16 * density, y, SKTextAlign.Left, font, _fill);
+            canvas.DrawText(line, x, y, SKTextAlign.Left, font, _fill);
             y += font.Spacing;
         }
         return top;
