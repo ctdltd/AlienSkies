@@ -41,7 +41,7 @@ public sealed partial class SkyRenderer : IDisposable
         // Host first, then companions: a second star in a wide binary, or the partner in a circumbinary pair.
         var suns = scene.Sky.SunsFromPlanet(planetOffset, t)
             .Select(v => new Sun(v.Name, horizon.ToLocal(v.Direction), v.DistanceAu, v.ApparentMagnitude, v.AngularRadius,
-                                 BvToColor(v.ColorBV), v.VisibleFraction))
+                                 BvToColor(v.ColorBV, s.ColorBoost), v.VisibleFraction))
             .ToList();
         var hostColor = suns[0].Color;
 
@@ -101,7 +101,7 @@ public sealed partial class SkyRenderer : IDisposable
             {
                 float r = (float)Math.Clamp((0.7 + (limit - star.ApparentMagnitude) * 0.45) * s.StarScale, 0.6, 7) * density;
                 byte alpha = (byte)Math.Clamp((limit - star.ApparentMagnitude + 0.6) / 2.5 * 255, 60, 255);
-                _fill.Color = BvToColor(star.ColorBV).WithAlpha(alpha);
+                _fill.Color = BvToColor(star.ColorBV, s.ColorBoost).WithAlpha(alpha);
                 canvas.DrawCircle(p, r, _fill);
             }
 
@@ -191,6 +191,8 @@ public sealed partial class SkyRenderer : IDisposable
             $"Lat {c.LatitudeDeg:0.#}°  Lon {c.LongitudeDeg:0.#}°  ·  orbit {c.SemiMajorAxisAu:0.###} AU / {c.OrbitalPeriodDays:0.##} d  ·  {spin}  ·  " +
             $"{suns[0].Name} at {suns[0].Altitude / Units.Deg:0}° altitude, mag {suns[0].Magnitude:0.0}",
         };
+        if (scene.Sky.IsSparse)
+            lines.Add("Far from Earth: our star catalogs miss many of the stars near here, so this sky looks emptier than it is");
         foreach (var sun in suns.Skip(1))
             lines.Add($"Second sun {sun.Name}: {sun.Altitude / Units.Deg:0}° altitude, mag {sun.Magnitude:0.0}, {sun.DistanceAu:0.#} AU away");
         if (SiblingSummary() is string siblings) lines.Add(siblings);
@@ -236,18 +238,11 @@ public sealed partial class SkyRenderer : IDisposable
         public double Strength => Math.Clamp((-Magnitude - 12) / 14.0, 0, 1);
     }
 
-    private static SKColor BvToColor(double bv)
+    /// <summary>Black-body star colour (<see cref="StarColor"/>), saturated by the "Star colour boost" setting.</summary>
+    private static SKColor BvToColor(double bv, double boost)
     {
-        // Coarse B−V → RGB ramp: blue-white (−0.3) → white (0.3) → yellow (0.8) → orange-red (1.8+).
-        bv = Math.Clamp(bv, -0.4, 2.0);
-        (double r, double g, double b) = bv switch
-        {
-            < 0.0 => (0.70 + bv * 0.5, 0.80 + bv * 0.3, 1.0),
-            < 0.4 => (0.85 + bv * 0.35, 0.90, 1.0 - bv * 0.3),
-            < 1.0 => (1.0, 0.95 - (bv - 0.4) * 0.25, 0.88 - (bv - 0.4) * 0.6),
-            _ => (1.0, 0.80 - (bv - 1.0) * 0.25, 0.52 - (bv - 1.0) * 0.3),
-        };
-        static byte B(double v) => (byte)Math.Clamp(v * 255, 0, 255);
+        var (r, g, b) = StarColor.FromBV(bv, boost);
+        static byte B(double v) => (byte)Math.Clamp(Math.Round(v * 255), 0, 255);
         return new SKColor(B(r), B(g), B(b));
     }
 

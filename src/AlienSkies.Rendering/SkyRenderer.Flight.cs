@@ -83,7 +83,7 @@ public sealed partial class SkyRenderer
 
             if (look.ApparentMagnitude <= limit)
             {
-                var color = BvToColor(look.ColorBV);
+                var color = BvToColor(look.ColorBV, s.ColorBoost);
                 if (look.ApparentMagnitude < -2)
                 {
                     // A star you are close to: a glow that shrinks as you leave it, or grows as you arrive.

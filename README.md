@@ -195,6 +195,7 @@ Settings live in `%APPDATA%\AlienSkies\settings.json` on Windows (in the app's p
 | **View** | Look azimuth, altitude, field of view | Which way you're facing |
 | | Pan across monitors | Continuous panorama on multiple screens |
 | | Limiting magnitude, star size | 6.5 ≈ a dark sky to the naked eye |
+| | Star colour boost | 1 = true black-body colours (subtle), 1.5 by default, up to 3 for a long-exposure look |
 | | Atmosphere / daylight, ground | |
 | | Milky Way, Milky Way brightness | 1 = a dark country sky, up to 3 for a long-exposure look |
 | | Sibling planets | The system's other planets as wandering points |
