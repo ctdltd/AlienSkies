@@ -212,6 +212,7 @@ Settings live in `%APPDATA%\AlienSkies\settings.json` on Windows (in the app's p
 | | Include imaginary planets | Lets the tour visit your imaginary planets too |
 | | Fly between stars, flight length | Fly to each new planet (30 s by default) instead of cutting to it |
 | | Near-light-speed look | While flying, stars crowd ahead and turn blue in front, red behind |
+| **Extras** | Passing starship | Every 10 to 20 minutes a small ship cruises across the sky and jumps to warp |
 
 ### Imaginary planets
 

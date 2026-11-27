@@ -9,7 +9,7 @@ namespace AlienSkies.Rendering;
 /// The simulation state shared by every monitor: which planet, where the observer stands, and the clock.
 /// Heavy work (re-projecting the catalog) happens only when the planet changes.
 /// </summary>
-public sealed class SkyScene
+public sealed partial class SkyScene
 {
     private static readonly Lazy<IReadOnlyList<Star>> Catalog = new(CatalogLoader.LoadStars);
     private static readonly Lazy<IReadOnlyList<ExoplanetSystem>> Planets = new(CatalogLoader.LoadExoplanets);
@@ -70,6 +70,7 @@ public sealed class SkyScene
     /// <summary>Call once per frame; handles tour hops and flights.</summary>
     public void Tick()
     {
+        TickStarship();
         if (Flight is { } flight)
         {
             flight.Progress = (_clock.Elapsed - flight.StartedAt).TotalSeconds / flight.DurationSeconds;
