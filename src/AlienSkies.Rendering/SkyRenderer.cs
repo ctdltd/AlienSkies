@@ -18,7 +18,7 @@ public sealed class SkyRenderer : IDisposable
     private static readonly SKColor SolGold = new(255, 210, 90);
 
     private readonly SKTypeface _typeface =
-        SKTypeface.FromFamilyName(OperatingSystem.IsWindows() ? "Segoe UI" : "sans-serif") ?? SKTypeface.Default;
+        SKTypeface.FromFamilyName(OperatingSystem.IsWindows() ? "Segoe UI" : OperatingSystem.IsMacOS() ? "Helvetica Neue" : "sans-serif") ?? SKTypeface.Default;
     private readonly SKPaint _fill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
 

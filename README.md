@@ -25,12 +25,13 @@ Move away from Earth and familiar constellations stretch and break apart. Our ow
 
 ## Status
 
-Early development. The astronomy core is unit-tested. All hosts draw with one shared SkiaSharp renderer, and `tools/AlienSkies.Preview` renders frames to PNG so drawing changes can be checked on any OS. The Windows saver and the Android app both build cleanly; the Android screen saver and live wallpaper have not yet been tested on a device. The repository embeds a small sample catalog so it runs out of the box. See [Star and planet data](#star-and-planet-data) to install the full catalogs.
+Early development. The astronomy core is unit-tested. All hosts draw with one shared SkiaSharp renderer, and `tools/AlienSkies.Preview` renders frames to PNG so drawing changes can be checked on any OS. The Windows saver and the Android app both build cleanly, and CI builds the macOS screen saver; the Android screen saver and live wallpaper have not yet been tested on a device. The repository embeds a small sample catalog so it runs out of the box. See [Star and planet data](#star-and-planet-data) to install the full catalogs.
 
 ## Requirements
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download) to build
 - **Windows saver:** Windows 10 or 11, x64. A framework-dependent build needs the .NET 10 Desktop Runtime; a self-contained build needs nothing extra.
+- **macOS:** to build, a Mac with the .NET 10 SDK and Xcode (or just its Command Line Tools); see [macOS](#macos). The screen saver runs on Apple silicon and Intel Macs.
 - **Android:** to build, the .NET `android` workload, a JDK (17 or later) and the Android SDK (see [Android](#android)); Android 8.0 (API 26) or later to run. The Android app builds on Windows, macOS or Linux.
 - Optional, for the full catalogs: Python 3 (WSL works well) with `pyvo`
 
@@ -126,6 +127,31 @@ To remove it: `adb uninstall com.certificationtoolanddie.alienskies`, or uninsta
 
 The release build is signed with the SDK's debug key, which is fine for sideloading. An APK built on a different machine has a different key, so Android refuses to install it over the old one; uninstall first. Publishing to Google Play needs your own signing key (`AndroidKeyStore` and the related MSBuild properties).
 
+### macOS
+
+The macOS version is a real screen saver bundle, `Alien Skies.saver`, that appears in System Settings > Screen Saver next to Apple's own. It must be built on a Mac:
+
+```bash
+src/AlienSkies.Mac/build-saver.sh --install       # build, then copy to ~/Library/Screen Savers
+src/AlienSkies.Mac/build-saver.sh --data data-out # also bundle the full catalogs
+```
+
+The result is `artifacts/mac/Alien Skies.saver` (and a zip of it), one universal bundle for Apple silicon and Intel. Double-clicking the `.saver` also offers to install it. CI builds the same bundle on a macOS runner, and you can download it from the run's `AlienSkies-macOS` artifact.
+
+**How it's built.** Apple loads screen savers as Objective-C plug-ins into its own process, so the bundle has two parts. `Saver/AlienSkiesView.m` is a small `ScreenSaverView`. The shared C# scene, settings and SkiaSharp renderer are compiled ahead of time with NativeAOT into `AlienSkiesCore.dylib`, which needs no .NET runtime on the user's Mac. Each frame the view asks the library to draw into a pixel buffer and puts it on screen. The Options button shows a sheet generated from the same settings model as the Windows dialog and the Android screen, so a new setting appears on all three without Mac-specific work. Imaginary planets are edited in the settings file for now (the sheet has an Open Settings File button).
+
+**Settings and catalogs.** Since macOS 14, screen savers run sandboxed inside Apple's `legacyScreenSaver` process, so `settings.json` lives in that process's container, in `~/Library/Containers/com.apple.ScreenSaver.Engine.legacyScreenSaver/Data/Library/Application Support/AlienSkies/`. Full catalogs go in a `data` folder next to it, or are bundled with `--data`.
+
+**Signing and sharing.** Without a certificate the script ad-hoc signs the bundle. That works on the Mac that built it. Copies downloaded on another Mac, including the CI artifact, are blocked by Gatekeeper until you allow them in System Settings > Privacy & Security, or remove the quarantine flag with `xattr -dr com.apple.quarantine "Alien Skies.saver"`. To share it properly, sign with a Developer ID Application certificate (Apple Developer Program, $99 a year) and notarize it:
+
+```bash
+xcrun notarytool store-credentials alienskies   # once: Apple ID, team ID, app-specific password
+SIGN_IDENTITY="Developer ID Application: Certification Tool and Die, Ltd. (TEAMID)" \
+NOTARY_PROFILE=alienskies src/AlienSkies.Mac/build-saver.sh
+```
+
+Screen savers can't be sold through the Mac App Store, so a notarized zip on a website is the usual way to distribute one.
+
 ### Command-line switches (Windows)
 
 | Switch | Meaning |
@@ -208,6 +234,7 @@ For Android, copy the CSVs into `src/AlienSkies.Android/Assets/data/` before bui
 src/AlienSkies.Core/          UI-free astronomy: coordinates, catalogs, orbit and spin, sky re-projection
 src/AlienSkies.Rendering/     Shared scene, settings and SkiaSharp renderer used by every host
 src/AlienSkies.Screensaver/   Windows host: switch handling, settings dialog, multi-monitor panorama
+src/AlienSkies.Mac/           macOS host: Objective-C ScreenSaverView + NativeAOT library, build-saver.sh
 src/AlienSkies.Android/       Android host: screen saver, live wallpaper (with a small Java shim), settings app
 tests/AlienSkies.Core.Tests/  xUnit tests: Sol seen from α Centauri, tidal locking, Kepler, reference frames
 tools/AlienSkies.Preview/     Renders single frames to PNG on any OS
@@ -225,7 +252,7 @@ Highlights, with the full list in [`docs/DESIGN.md`](docs/DESIGN.md):
 - A Milky Way band, atmospheric dimming near the horizon, and sky colour from the host star's temperature
 - Proper motion: the sky from there, thousands of years ago or ahead
 - Cinematic flights between systems in tour mode
-- GPU rendering, and a macOS version
+- GPU rendering
 
 ## Acknowledgements
 

@@ -114,5 +114,5 @@ Reproduce with `--planet "Kepler-16 b" --days 10.775 --az 264 --alt 9 --fov 60` 
 
 **Platform**
 * GPU rendering (SkiaSharp's GL backend)
-* macOS `.saver` reusing the SkiaSharp renderer
+* macOS `.saver` reusing the SkiaSharp renderer (done: Objective-C `ScreenSaverView` plus the shared code as a NativeAOT dylib; see `src/AlienSkies.Mac`)
 * Android: a daylight-aware dim mode for bedside docks
