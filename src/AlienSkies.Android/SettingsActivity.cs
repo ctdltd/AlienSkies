@@ -63,6 +63,8 @@ public sealed class SettingsActivity : Activity
             }
         }
 
+        AddAbout(form);
+
         var scroll = new ScrollView(this);
         scroll.AddView(form);
         SetContentView(scroll);
@@ -127,6 +129,17 @@ public sealed class SettingsActivity : Activity
             TryStart(intent, "This device does not support live wallpapers.");
         };
         form.AddView(wallpaper);
+    }
+
+    /// <summary>Copyright, GPL notice and credits at the foot of the page, with tappable links.</summary>
+    private void AddAbout(LinearLayout form)
+    {
+        form.AddView(Heading("About"));
+        // The link mask applies only to text set after it, so set it first.
+        var about = new TextView(this) { AutoLinkMask = Android.Text.Util.MatchOptions.WebUrls };
+        about.Text = AboutInfo.Text();
+        about.SetTextSize(Android.Util.ComplexUnitType.Sp, 12);
+        form.AddView(about);
     }
 
     private void TryStart(Intent intent, string failureMessage)

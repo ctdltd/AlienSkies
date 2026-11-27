@@ -38,8 +38,16 @@ int main(int argc, char **argv) {
     apply_fn apply = (apply_fn)sym("as_settings_apply");
     free_fn release = (free_fn)sym("as_free");
     sym("as_settings_reload");
+    str_fn about = (str_fn)sym("as_about_text");
 
     if (init(argv[2], argv[3]) != 0) { fprintf(stderr, "FAIL: as_init: %s\n", last_error()); return 1; }
+
+    char *notice = about();
+    if (!notice || !strstr(notice, "GNU General Public License") || !strstr(notice, "Certification Tool and Die")) {
+        fprintf(stderr, "FAIL: as_about_text lacks the license notice: %s\n", notice ? notice : last_error());
+        return 1;
+    }
+    release(notice);
 
     char *json = schema();
     if (!json) { fprintf(stderr, "FAIL: as_settings_schema: %s\n", last_error()); return 1; }
