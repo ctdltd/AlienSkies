@@ -11,31 +11,33 @@ namespace AlienSkies.Core.Astronomy;
 /// </summary>
 public static class MilkyWayModel
 {
-    /// <summary>A bright (or dark) patch: Gaussian in longitude and latitude, in degrees.</summary>
-    private readonly record struct Patch(double L, double B, double SigmaL, double SigmaB, double Amount, double Warmth = 0.3);
+    // Patches: Gaussian in longitude and latitude, six numbers each: l, b, σl, σb (degrees), amount, warmth.
+    // Kept as constant spans rather than static arrays of structs: the NativeAOT macOS build faulted reading a
+    // preinitialised static struct array, and RVA data is the plainest form there is.
+    private const int Stride = 6;
 
-    private static readonly Patch[] Bright =
+    private static ReadOnlySpan<double> Bright =>
     [
-        new(0, -3, 11, 7, 0.80, 1.0),   // the bulge, behind the Sagittarius star cloud
-        new(4, -5, 4, 3, 0.35, 0.9),    // Large Sagittarius star cloud (Baade's window region)
-        new(27, -2, 5, 3.5, 0.35, 0.6), // Scutum star cloud
-        new(78, 1.5, 12, 5, 0.32, 0.3), // Cygnus star cloud
-        new(287, -1, 8, 4, 0.32, 0.25), // Carina
-        new(318, -1, 15, 4, 0.22, 0.35),// Centaurus / Norma
-        new(125, 0, 30, 6, 0.10, 0.2),  // Cassiopeia / Perseus
+        0, -3, 11, 7, 0.80, 1.0,      // the bulge, behind the Sagittarius star cloud
+        4, -5, 4, 3, 0.35, 0.9,       // Large Sagittarius star cloud (Baade's window region)
+        27, -2, 5, 3.5, 0.35, 0.6,    // Scutum star cloud
+        78, 1.5, 12, 5, 0.32, 0.3,    // Cygnus star cloud
+        287, -1, 8, 4, 0.32, 0.25,    // Carina
+        318, -1, 15, 4, 0.22, 0.35,   // Centaurus / Norma
+        125, 0, 30, 6, 0.10, 0.2,     // Cassiopeia / Perseus
     ];
 
-    private static readonly Patch[] Clouds =
+    private static ReadOnlySpan<double> Clouds =>
     [
-        new(280.5, -32.9, 3.5, 2.6, 0.32, 0.25), // Large Magellanic Cloud
-        new(302.8, -44.3, 1.8, 1.2, 0.20, 0.25), // Small Magellanic Cloud
+        280.5, -32.9, 3.5, 2.6, 0.32, 0.25, // Large Magellanic Cloud
+        302.8, -44.3, 1.8, 1.2, 0.20, 0.25, // Small Magellanic Cloud
     ];
 
-    private static readonly Patch[] Dark =
+    private static ReadOnlySpan<double> Dark =>
     [
-        new(301, -1, 2.5, 2.5, 0.75),  // Coalsack
-        new(355, 16, 6, 5, 0.45),      // ρ Ophiuchi clouds
-        new(357, 7, 4, 3, 0.45),       // Pipe Nebula
+        301, -1, 2.5, 2.5, 0.75, 0,   // Coalsack
+        355, 16, 6, 5, 0.45, 0,       // ρ Ophiuchi clouds
+        357, 7, 4, 3, 0.45, 0,        // Pipe Nebula
     ];
 
     /// <summary>
@@ -54,11 +56,12 @@ public static class MilkyWayModel
         double halo = 0.05 * Gauss(b, 16) * (0.4 + 0.6 * toCentre); // the faint glow either side of the band
 
         double intensity = disc + halo, warmWeight = (disc + halo) * 0.3;
-        foreach (var p in Bright)
+        var bright = Bright;
+        for (int i = 0; i < bright.Length; i += Stride)
         {
-            double v = p.Amount * Patchiness(l, b, p);
+            double v = bright[i + 4] * Patchiness(l, b, bright.Slice(i, Stride));
             intensity += v;
-            warmWeight += v * p.Warmth;
+            warmWeight += v * bright[i + 5];
         }
         double warmth = intensity > 1e-6 ? warmWeight / intensity : 0.3;
 
@@ -67,7 +70,8 @@ public static class MilkyWayModel
         double riftB = 1.2 + System.Math.Max(0, 12 - l) * 0.3;
         double dust = 0.78 * riftAlong * Gauss(b - riftB, 2.2 + System.Math.Max(0, 12 - l) * 0.08);
         dust += 0.35 * Gauss(b + 0.5, 0.9) * (0.4 + 0.6 * toCentre); // thin mid-plane lane all along the band
-        foreach (var p in Dark) dust += p.Amount * Patchiness(l, b, p);
+        var dark = Dark;
+        for (int i = 0; i < dark.Length; i += Stride) dust += dark[i + 4] * Patchiness(l, b, dark.Slice(i, Stride));
 
         var dir = Galactic.FromLB(lDeg, bDeg);
         double clumps = 0.45 + 1.1 * Fbm(dir * 11, 5);
@@ -75,22 +79,25 @@ public static class MilkyWayModel
         dust *= 0.5 + 1.0 * dustNoise;
         intensity *= clumps * System.Math.Max(0, 1 - System.Math.Min(dust, 0.95));
 
-        foreach (var c in Clouds)
+        var clouds = Clouds;
+        for (int i = 0; i < clouds.Length; i += Stride)
         {
-            double v = c.Amount * Patchiness(l, b, c) * (0.7 + 0.6 * Fbm(dir * 40, 2));
+            double v = clouds[i + 4] * Patchiness(l, b, clouds.Slice(i, Stride)) * (0.7 + 0.6 * Fbm(dir * 40, 2));
             if (v > 1e-4)
             {
-                warmth = (warmth * intensity + c.Warmth * v) / (intensity + v);
+                warmth = (warmth * intensity + clouds[i + 5] * v) / (intensity + v);
                 intensity += v;
             }
         }
         return (System.Math.Clamp(intensity, 0, 1.2), System.Math.Clamp(warmth, 0, 1));
     }
 
-    private static double Patchiness(double l, double b, Patch p)
+    /// <param name="p">One patch: l, b, σl, σb, …</param>
+    private static double Patchiness(double l, double b, ReadOnlySpan<double> p)
     {
-        double dl = Wrap180(l - p.L) * System.Math.Cos(b * Units.Deg);
-        return System.Math.Exp(-0.5 * (dl * dl / (p.SigmaL * p.SigmaL) + (b - p.B) * (b - p.B) / (p.SigmaB * p.SigmaB)));
+        double dl = Wrap180(l - p[0]) * System.Math.Cos(b * Units.Deg);
+        double db = b - p[1];
+        return System.Math.Exp(-0.5 * (dl * dl / (p[2] * p[2]) + db * db / (p[3] * p[3])));
     }
 
     private static double Gauss(double x, double sigma) => System.Math.Exp(-0.5 * x * x / (sigma * sigma));
